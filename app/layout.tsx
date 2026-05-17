@@ -22,9 +22,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nigel Rimando — Software Engineer & Consultant",
-  description:
-    "Software engineer and technical consultant. I build product infrastructure, data systems, and full-stack applications that ship.",
+  title: "Nigel Rimando — Data Professional & Consultant",
+  description: "Data, Stats, Fitness, Padel, and Milk Tea",
 };
 
 export default function RootLayout({
@@ -37,9 +36,7 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${interTight.variable} ${jetbrainsMono.variable} scroll-smooth`}
     >
-      <body className="bg-bg text-text antialiased font-sans">
-        {children}
-      </body>
+      <body className="bg-bg text-text antialiased font-sans">{children}</body>
     </html>
   );
 }

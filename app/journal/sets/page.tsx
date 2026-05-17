@@ -1,7 +1,3 @@
-import { redirect } from "next/navigation";
-import { getIronSession } from "iron-session";
-import { cookies } from "next/headers";
-import { sessionOptions, SessionData } from "@/lib/session";
 import { db } from "@/lib/db";
 import { sets, exercises } from "@/lib/schema";
 import { desc, isNotNull, gte, and, count, inArray } from "drizzle-orm";
@@ -11,11 +7,6 @@ function toDateStr(d: Date): string {
 }
 
 export default async function JournalSetsPage() {
-  const session = await getIronSession<SessionData>(
-    await cookies(),
-    sessionOptions,
-  );
-  if (!session.isLoggedIn) redirect("/login");
 
   const today = toDateStr(new Date());
 
