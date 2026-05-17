@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     .from(sets)
     .innerJoin(exercises, eq(sets.exerciseId, exercises.id))
     .where(and(eq(sets.date, date), isNotNull(sets.actual)))
-    .orderBy(exercises.name, asc(sets.createdAt), asc(sets.id));
+    .orderBy(asc(sets.date), asc(sets.id));
 
   // Group by exercise
   const grouped: Record<number, { name: string; sets: { actual: number | null; value: number | null; measure: string | null }[] }> = {};

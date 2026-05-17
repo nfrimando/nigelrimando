@@ -1,16 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import ExercisesSection from "./ExercisesSection";
 import SetsSection from "./SetsSection";
+import PadelSetsSection from "./PadelSetsSection";
+import PersonsSection from "./PersonsSection";
 
-const TABS = ["Exercises", "Sets"] as const;
+const TABS = ["Exercises", "Sets", "Padel Sets", "Persons"] as const;
 type Tab = (typeof TABS)[number];
+
+function isValidTab(t: string | null): t is Tab {
+  return TABS.includes(t as Tab);
+}
 
 export default function AdminShell() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>("Exercises");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab: Tab = isValidTab(tabParam) ? tabParam : "Exercises";
+
+  function setTab(tab: Tab) {
+    router.replace(`/admin?tab=${encodeURIComponent(tab)}`, { scroll: false });
+  }
 
   async function handleSignOut() {
     await fetch("/api/logout", { method: "POST" });
@@ -36,7 +47,7 @@ export default function AdminShell() {
           {TABS.map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => setTab(tab)}
               className={`px-4 py-2 rounded-[14px] text-sm font-medium transition-colors ${
                 activeTab === tab
                   ? "bg-[var(--accent)] text-white"
@@ -50,6 +61,8 @@ export default function AdminShell() {
 
         {activeTab === "Exercises" && <ExercisesSection />}
         {activeTab === "Sets" && <SetsSection />}
+        {activeTab === "Padel Sets" && <PadelSetsSection />}
+        {activeTab === "Persons" && <PersonsSection />}
       </div>
     </div>
   );

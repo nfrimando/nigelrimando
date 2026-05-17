@@ -18,6 +18,17 @@ Phase 1 — Public homepage (resume/portfolio). No auth or DB needed yet.
 - Clerk (not wired up yet)
 - Hosted on Vercel
 
+# Timezone
+
+The user lives in the Philippines (Asia/Manila, UTC+8). All date-related computations must use this timezone, not UTC. Vercel servers run in UTC, so `new Date().toISOString()` returns the wrong date during the 8 hours before midnight PH time. Always derive "today" using:
+
+```ts
+new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date())
+// returns "YYYY-MM-DD" in PH local time
+```
+
+When computing differences between two `YYYY-MM-DD` strings, parse them as local Date objects (`new Date(y, m-1, d)`) to avoid UTC offset drift.
+
 # Code Conventions
 
 - Use App Router conventions (no `pages/` directory)

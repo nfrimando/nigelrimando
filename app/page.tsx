@@ -71,9 +71,9 @@ export default async function Home() {
               </h1>
               <p className="text-lg text-muted leading-relaxed max-w-[600px] mb-10">
                 This is my corner of the internet where I share what I build,
-                what I learn, and random insights on data I&apos;ve been
+                things I learn, and random data insights that I&apos;ve been
                 journaling over the years. Let&apos;s talk about how I can help
-                you build something with data too.
+                you build something with data.
               </p>
               <div className="flex flex-wrap gap-3 mb-12">
                 <a

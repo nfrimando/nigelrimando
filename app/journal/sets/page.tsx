@@ -4,14 +4,16 @@ import { desc, isNotNull, gte, and, count, asc } from "drizzle-orm";
 import DailyWorkoutSection from "./DailyWorkoutSection";
 import ExerciseExplorer from "./ExerciseExplorer";
 
-function toDateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
+// All date arithmetic uses Philippines time (Asia/Manila, UTC+8).
+// The server runs in UTC; using toISOString() would give the wrong date
+// during the 8 hours before midnight PH where UTC is still the prior day.
+function todayPH(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
 }
 
 export default async function JournalSetsPage() {
 
-  const todayDate = new Date();
-  const today = toDateStr(todayDate);
+  const today = todayPH();
 
   // All training dates (completed sets only)
   const allDatesRaw = await db
@@ -37,9 +39,13 @@ export default async function JournalSetsPage() {
     .limit(1);
 
   // Training dates within the past year (for the daily workout selector)
-  const oneYearAgo = new Date(todayDate);
-  oneYearAgo.setFullYear(todayDate.getFullYear() - 1);
-  const oneYearAgoStr = toDateStr(oneYearAgo);
+  const [ty, tm, td] = today.split("-").map(Number);
+  const oneYearAgoLocal = new Date(ty - 1, tm - 1, td);
+  const oneYearAgoStr = [
+    oneYearAgoLocal.getFullYear(),
+    String(oneYearAgoLocal.getMonth() + 1).padStart(2, "0"),
+    String(oneYearAgoLocal.getDate()).padStart(2, "0"),
+  ].join("-");
   const recentTrainingDates = allDatesRaw
     .map((r) => r.date)
     .filter((d) => d >= oneYearAgoStr)
@@ -52,18 +58,15 @@ export default async function JournalSetsPage() {
     .at(-1) ?? null;
   let daysSinceLastWorkout: number | null = null;
   if (lastTrainingDate) {
-    const last = new Date(lastTrainingDate + "T00:00:00");
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    const [ly, lm, ld] = lastTrainingDate.split("-").map(Number);
+    const lastLocal = new Date(ly, lm - 1, ld);
+    const todayLocal = new Date(ty, tm - 1, td);
     daysSinceLastWorkout = Math.round(
-      (now.getTime() - last.getTime()) / 86_400_000,
+      (todayLocal.getTime() - lastLocal.getTime()) / 86_400_000,
     );
   }
 
   // Calendar: last 4 weeks as a Mon–Sun grid
-  // Parse today's date string as local midnight so day-of-week is derived
-  // from the same YYYY-MM-DD values stored in the DB — no UTC offset drift.
-  const [ty, tm, td] = today.split("-").map(Number);
   const dow = new Date(ty, tm - 1, td).getDay(); // 0=Sun
   const daysFromMonday = dow === 0 ? 6 : dow - 1;
 
