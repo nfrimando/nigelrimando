@@ -21,7 +21,20 @@ function Divider() {
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
   const [year, month, day] = dateStr.split("-").map(Number);
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   return `${months[month - 1]} ${day}, ${year}`;
 }
 
@@ -58,9 +71,9 @@ export default async function Home() {
               </h1>
               <p className="text-lg text-muted leading-relaxed max-w-[600px] mb-10">
                 This is my corner of the internet where I share what I build,
-                what I learn, and random insights on data I&apos;ve been journaling
-                over the years. Let&apos;s talk about how I can help you build
-                something with data too.
+                what I learn, and random insights on data I&apos;ve been
+                journaling over the years. Let&apos;s talk about how I can help
+                you build something with data too.
               </p>
               <div className="flex flex-wrap gap-3 mb-12">
                 <a
@@ -82,7 +95,7 @@ export default async function Home() {
                 </span>
                 <span className="text-border">·</span>
                 <a
-                  href="https://linkedin.com/in/nfrimando"
+                  href="https://www.linkedin.com/in/nigel-rimando/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-muted hover:text-text transition-colors duration-[180ms] font-medium"
@@ -172,10 +185,11 @@ export default async function Home() {
               technically impressive.
             </p>
             <p className="text-muted leading-relaxed mb-5">
-              Outside of work, I&apos;m deep into fitness, I drink at least two milk
-              teas everyday, and i&apos;m super active in our local padel community.
-              I track a lot of personal data out of curiosity, and live with our
-              rescued cats. Estoy tambien aprendiendo Español poco a poco.
+              Outside of work, I&apos;m deep into fitness, I drink at least two
+              milk teas everyday, and i&apos;m super active in our local padel
+              community. I track a lot of personal data out of curiosity, and
+              live with our rescued cats. Estoy tambien aprendiendo Español poco
+              a poco.
             </p>
             <p className="text-sm text-muted font-mono">
               Based in the Philippines · Currently working full-time for Tala
