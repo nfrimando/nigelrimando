@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-inter-tight);
+  --font-mono: var(--font-jetbrains-mono);
+
+  --color-bg: #F7F3EE;
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #EFE8DF;
+  --color-text: #171A1F;
+  --color-muted: #66707A;
+  --color-accent: #4E6877;
+  --color-accent-hover: #3E5663;
+  --color-warm: #8B6C61;
+  --color-success: #5E8365;
+  --color-border: #D8CFC6;
+}
+
+/* Aliases so var(--x) references in components resolve correctly under Tailwind v4 */
+:root {
+  --bg: #F7F3EE;
+  --surface: #FFFFFF;
+  --surface-alt: #EFE8DF;
+  --text: #171A1F;
+  --text-muted: #66707A;
+  --accent: #4E6877;
+  --accent-hover: #3E5663;
+  --warm: #8B6C61;
+  --success: #5E8365;
+  --border: #D8CFC6;
+}
