@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { db } from "@/lib/db";
 import { transports } from "@/lib/schema";
-import { desc } from "drizzle-orm";
+import { desc, like, or, count } from "drizzle-orm";
 
 async function requireAuth() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
@@ -12,16 +12,39 @@ async function requireAuth() {
   return session;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   if (!(await requireAuth())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "25")));
+  const q = searchParams.get("q")?.trim() ?? "";
+  const offset = (page - 1) * limit;
+
+  const condition = q
+    ? or(
+        like(transports.date, `%${q}%`),
+        like(transports.eventType, `%${q}%`),
+        like(transports.mode, `%${q}%`),
+        like(transports.origin, `%${q}%`),
+        like(transports.destination, `%${q}%`),
+        like(transports.notes, `%${q}%`),
+      )
+    : undefined;
+
+  const [{ total }] = await db.select({ total: count() }).from(transports).where(condition);
+
   const data = await db
     .select()
     .from(transports)
-    .orderBy(desc(transports.date), desc(transports.createdAt));
-  return NextResponse.json(data);
+    .where(condition)
+    .orderBy(desc(transports.date), desc(transports.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  return NextResponse.json({ data, total, page, totalPages: Math.ceil(total / limit) });
 }
 
 export async function POST(req: NextRequest) {

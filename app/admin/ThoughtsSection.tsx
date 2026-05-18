@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Thought } from "@/lib/schema";
 
 function Spinner({ light }: { light?: boolean }) {
@@ -41,6 +41,7 @@ const submitClass =
 const cancelClass =
   "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200";
 
+const PAGE_SIZE = 25;
 const THOUGHT_TYPES = ["reflection", "idea", "goal", "gratitude", "rant", "other"];
 
 type FormState = { entryDate: string; thought: string; type: string };
@@ -49,7 +50,10 @@ const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).form
 const defaultForm: FormState = { entryDate: today, thought: "", type: "" };
 
 export default function ThoughtsSection() {
-  const [thoughts, setThoughts] = useState<Thought[]>([]);
+  const [data, setData] = useState<Thought[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [fetching, setFetching] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -63,19 +67,41 @@ export default function ThoughtsSection() {
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
 
-  async function fetchThoughts() {
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  async function fetchPage(p: number, q: string) {
     setFetching(true);
     try {
-      const res = await fetch("/api/admin/thoughts");
-      if (res.ok) setThoughts(await res.json());
+      const params = new URLSearchParams({ page: String(p), limit: String(PAGE_SIZE) });
+      if (q) params.set("q", q);
+      const res = await fetch(`/api/admin/thoughts?${params}`);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json.data ?? []);
+        setTotal(json.total ?? 0);
+        setPage(json.page ?? p);
+        setTotalPages(json.totalPages || 1);
+      }
     } finally {
       setFetching(false);
     }
   }
 
   useEffect(() => {
-    fetchThoughts();
+    fetchPage(1, "");
   }, []);
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchPage(1, value.trim());
+    }, 300);
+  }
+
+  function goToPage(p: number) {
+    fetchPage(p, search.trim());
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -90,10 +116,10 @@ export default function ThoughtsSection() {
       if (res.ok) {
         setForm(defaultForm);
         setShowAddModal(false);
-        fetchThoughts();
+        fetchPage(page, search.trim());
       } else {
-        const data = await res.json();
-        setAddError(data.error || "Failed to add thought.");
+        const json = await res.json();
+        setAddError(json.error || "Failed to add thought.");
       }
     } finally {
       setAddLoading(false);
@@ -118,12 +144,11 @@ export default function ThoughtsSection() {
         body: JSON.stringify(editForm),
       });
       if (res.ok) {
-        const updated = await res.json();
-        setThoughts((prev) => prev.map((t) => (t.id === editingId ? updated : t)));
         setEditingId(null);
+        fetchPage(page, search.trim());
       } else {
-        const data = await res.json();
-        setEditError(data.error || "Failed to update thought.");
+        const json = await res.json();
+        setEditError(json.error || "Failed to update thought.");
       }
     } finally {
       setEditLoading(false);
@@ -133,29 +158,22 @@ export default function ThoughtsSection() {
   async function handleDelete(id: number) {
     if (!confirm("Delete this thought? This cannot be undone.")) return;
     await fetch(`/api/admin/thoughts/${id}`, { method: "DELETE" });
-    setThoughts((prev) => prev.filter((t) => t.id !== id));
+    fetchPage(page, search.trim());
   }
-
-  const filtered = search.trim()
-    ? thoughts.filter((t) =>
-        t.thought.toLowerCase().includes(search.toLowerCase()) ||
-        (t.type ?? "").toLowerCase().includes(search.toLowerCase())
-      )
-    : thoughts;
 
   return (
     <div className="flex flex-col gap-6">
       <section className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="font-heading font-bold text-base text-[var(--text)] flex items-center gap-2">
-            Thoughts ({thoughts.length})
+            Thoughts ({total})
             {fetching && <Spinner />}
           </h2>
           <div className="flex items-center gap-3">
             <input
               type="search"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Search…"
               className={`${inputClass} max-w-[180px]`}
             />
@@ -168,36 +186,49 @@ export default function ThoughtsSection() {
           </div>
         </div>
 
-        {filtered.length === 0 ? (
+        {data.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)]">No thoughts found.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
-                  <th className="pb-2 pr-4 font-medium">Date</th>
-                  <th className="pb-2 pr-4 font-medium">Type</th>
-                  <th className="pb-2 pr-4 font-medium">Thought</th>
-                  <th className="pb-2 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((t) => (
-                  <tr key={t.id} className="border-b border-[var(--border)] last:border-0 align-top">
-                    <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{t.entryDate}</td>
-                    <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap">{t.type ?? "—"}</td>
-                    <td className="py-2 pr-4 text-[var(--text)] max-w-md">{t.thought}</td>
-                    <td className="py-2">
-                      <div className="flex gap-2">
-                        <button onClick={() => startEdit(t)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
-                        <button onClick={() => handleDelete(t.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
+                    <th className="pb-2 pr-4 font-medium">Date</th>
+                    <th className="pb-2 pr-4 font-medium">Type</th>
+                    <th className="pb-2 pr-4 font-medium">Thought</th>
+                    <th className="pb-2 font-medium"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {data.map((t) => (
+                    <tr key={t.id} className="border-b border-[var(--border)] last:border-0 align-top">
+                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{t.entryDate}</td>
+                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap">{t.type ?? "—"}</td>
+                      <td className="py-2 pr-4 text-[var(--text)] max-w-md">{t.thought}</td>
+                      <td className="py-2">
+                        <div className="flex gap-2">
+                          <button onClick={() => startEdit(t)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
+                          <button onClick={() => handleDelete(t.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-4 mt-4">
+                <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
+                  ← Prev
+                </button>
+                <span className="text-sm text-[var(--text-muted)]">Page {page} of {totalPages}</span>
+                <button onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
 

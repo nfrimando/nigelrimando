@@ -8,6 +8,7 @@ import PersonsSection from "./PersonsSection";
 import ThoughtsSection from "./ThoughtsSection";
 import InteractionsSection from "./InteractionsSection";
 import TransportsSection from "./TransportsSection";
+import ExpensesSection from "./ExpensesSection";
 
 const TABS = [
   "Exercises",
@@ -17,6 +18,7 @@ const TABS = [
   "Thoughts",
   "Interactions",
   "Transports",
+  "Expenses",
 ] as const;
 type Tab = (typeof TABS)[number];
 
@@ -87,6 +89,7 @@ export default function AdminShell() {
         {activeTab === "Thoughts" && <ThoughtsSection />}
         {activeTab === "Interactions" && <InteractionsSection />}
         {activeTab === "Transports" && <TransportsSection />}
+        {activeTab === "Expenses" && <ExpensesSection />}
       </div>
     </div>
   );

@@ -72,7 +72,7 @@ function mapRow(row: Record<string, string>): NewExpense {
     category: row["category"],
     subcategory: row["subcategory"] || null,
     item: row["item"],
-    amount: parseFloat(row["amount"]),
+    amount: parseFloat(row["amount"].replace(/,/g, "")),
     shop: row["shop"] || null,
     month: row["month"] || null,
     notes: row["notes"] || null,

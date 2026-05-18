@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Person } from "@/lib/schema";
 
 type InteractionRow = {
@@ -62,6 +62,7 @@ const submitClass =
 const cancelClass =
   "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200";
 
+const PAGE_SIZE = 25;
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
 const defaultForm: FormState = { entryDate: today, personId: "", rank: "", note: "", sentiment: "" };
 
@@ -77,7 +78,10 @@ function personDisplay(row: InteractionRow) {
 }
 
 export default function InteractionsSection() {
-  const [interactions, setInteractions] = useState<InteractionRow[]>([]);
+  const [data, setData] = useState<InteractionRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [persons, setPersons] = useState<Person[]>([]);
   const [fetching, setFetching] = useState(false);
   const [search, setSearch] = useState("");
@@ -92,23 +96,47 @@ export default function InteractionsSection() {
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
 
-  async function fetchAll() {
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  async function fetchPage(p: number, q: string) {
     setFetching(true);
     try {
-      const [iRes, pRes] = await Promise.all([
-        fetch("/api/admin/interactions"),
-        fetch("/api/admin/persons"),
-      ]);
-      if (iRes.ok) setInteractions(await iRes.json());
-      if (pRes.ok) setPersons(await pRes.json());
+      const params = new URLSearchParams({ page: String(p), limit: String(PAGE_SIZE) });
+      if (q) params.set("q", q);
+      const res = await fetch(`/api/admin/interactions?${params}`);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json.data ?? []);
+        setTotal(json.total ?? 0);
+        setPage(json.page ?? p);
+        setTotalPages(json.totalPages || 1);
+      }
     } finally {
       setFetching(false);
     }
   }
 
+  async function fetchPersons() {
+    const res = await fetch("/api/admin/persons");
+    if (res.ok) setPersons(await res.json());
+  }
+
   useEffect(() => {
-    fetchAll();
+    fetchPage(1, "");
+    fetchPersons();
   }, []);
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchPage(1, value.trim());
+    }, 300);
+  }
+
+  function goToPage(p: number) {
+    fetchPage(p, search.trim());
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -123,10 +151,10 @@ export default function InteractionsSection() {
       if (res.ok) {
         setForm(defaultForm);
         setShowAddModal(false);
-        fetchAll();
+        fetchPage(page, search.trim());
       } else {
-        const data = await res.json();
-        setAddError(data.error || "Failed to add interaction.");
+        const json = await res.json();
+        setAddError(json.error || "Failed to add interaction.");
       }
     } finally {
       setAddLoading(false);
@@ -158,10 +186,10 @@ export default function InteractionsSection() {
       });
       if (res.ok) {
         setEditingId(null);
-        fetchAll();
+        fetchPage(page, search.trim());
       } else {
-        const data = await res.json();
-        setEditError(data.error || "Failed to update interaction.");
+        const json = await res.json();
+        setEditError(json.error || "Failed to update interaction.");
       }
     } finally {
       setEditLoading(false);
@@ -171,33 +199,22 @@ export default function InteractionsSection() {
   async function handleDelete(id: number) {
     if (!confirm("Delete this interaction? This cannot be undone.")) return;
     await fetch(`/api/admin/interactions/${id}`, { method: "DELETE" });
-    setInteractions((prev) => prev.filter((r) => r.id !== id));
+    fetchPage(page, search.trim());
   }
-
-  const filtered = search.trim()
-    ? interactions.filter((r) => {
-        const q = search.toLowerCase();
-        return (
-          (r.personName ?? "").toLowerCase().includes(q) ||
-          (r.note ?? "").toLowerCase().includes(q) ||
-          r.entryDate.includes(q)
-        );
-      })
-    : interactions;
 
   return (
     <div className="flex flex-col gap-6">
       <section className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="font-heading font-bold text-base text-[var(--text)] flex items-center gap-2">
-            Interactions ({interactions.length})
+            Interactions ({total})
             {fetching && <Spinner />}
           </h2>
           <div className="flex items-center gap-3">
             <input
               type="search"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Search…"
               className={`${inputClass} max-w-[180px]`}
             />
@@ -210,40 +227,53 @@ export default function InteractionsSection() {
           </div>
         </div>
 
-        {filtered.length === 0 ? (
+        {data.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)]">No interactions found.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
-                  <th className="pb-2 pr-4 font-medium">Date</th>
-                  <th className="pb-2 pr-4 font-medium">Person</th>
-                  <th className="pb-2 pr-4 font-medium">Rank</th>
-                  <th className="pb-2 pr-4 font-medium">Sentiment</th>
-                  <th className="pb-2 pr-4 font-medium">Note</th>
-                  <th className="pb-2 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((row) => (
-                  <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top">
-                    <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.entryDate}</td>
-                    <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">{personDisplay(row)}</td>
-                    <td className="py-2 pr-4 text-[var(--text-muted)]">{row.rank ?? "—"}</td>
-                    <td className="py-2 pr-4 text-[var(--text-muted)]">{sentimentLabel(row.sentiment)}</td>
-                    <td className="py-2 pr-4 text-[var(--text)] max-w-xs">{row.note ?? "—"}</td>
-                    <td className="py-2">
-                      <div className="flex gap-2">
-                        <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
-                        <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
+                    <th className="pb-2 pr-4 font-medium">Date</th>
+                    <th className="pb-2 pr-4 font-medium">Person</th>
+                    <th className="pb-2 pr-4 font-medium">Rank</th>
+                    <th className="pb-2 pr-4 font-medium">Sentiment</th>
+                    <th className="pb-2 pr-4 font-medium">Note</th>
+                    <th className="pb-2 font-medium"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {data.map((row) => (
+                    <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top">
+                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.entryDate}</td>
+                      <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">{personDisplay(row)}</td>
+                      <td className="py-2 pr-4 text-[var(--text-muted)]">{row.rank ?? "—"}</td>
+                      <td className="py-2 pr-4 text-[var(--text-muted)]">{sentimentLabel(row.sentiment)}</td>
+                      <td className="py-2 pr-4 text-[var(--text)] max-w-xs">{row.note ?? "—"}</td>
+                      <td className="py-2">
+                        <div className="flex gap-2">
+                          <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
+                          <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-4 mt-4">
+                <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
+                  ← Prev
+                </button>
+                <span className="text-sm text-[var(--text-muted)]">Page {page} of {totalPages}</span>
+                <button onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
 

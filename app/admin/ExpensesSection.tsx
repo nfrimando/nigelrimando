@@ -1,19 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Transport } from "@/lib/schema";
+import type { Expense } from "@/lib/schema";
 
 type FormState = {
   date: string;
-  startTime: string;
-  endTime: string;
-  eventType: string;
-  mode: string;
+  category: string;
+  subcategory: string;
   item: string;
-  origin: string;
-  destination: string;
+  amount: string;
+  shop: string;
   notes: string;
-  videoUrl: string;
 };
 
 function Spinner({ light }: { light?: boolean }) {
@@ -55,38 +52,18 @@ const cancelClass =
   "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200";
 
 const PAGE_SIZE = 25;
-
-const EVENT_TYPES = ["trip", "charging"];
-const MODES = ["ebike"];
-const ITEMS = ["ebike", "helmet"];
-
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
 const defaultForm: FormState = {
   date: today,
-  startTime: "",
-  endTime: "",
-  eventType: "trip",
-  mode: "ebike",
+  category: "",
+  subcategory: "",
   item: "",
-  origin: "",
-  destination: "",
+  amount: "",
+  shop: "",
   notes: "",
-  videoUrl: "",
 };
 
-function tripDuration(startTime: string | null, endTime: string | null): string | null {
-  if (!startTime || !endTime) return null;
-  const [sh, sm] = startTime.split(":").map(Number);
-  const [eh, em] = endTime.split(":").map(Number);
-  const mins = eh * 60 + em - (sh * 60 + sm);
-  if (mins <= 0) return null;
-  if (mins < 60) return `${mins}m`;
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
-
-function TransportForm({
+function ExpenseForm({
   form,
   setForm,
   onSubmit,
@@ -95,8 +72,9 @@ function TransportForm({
   submitLabel,
   onCancel,
   idPrefix,
-  originSuggestions,
-  destinationSuggestions,
+  categorySuggestions,
+  subcategorySuggestions,
+  shopSuggestions,
 }: {
   form: FormState;
   setForm: (f: FormState) => void;
@@ -106,8 +84,9 @@ function TransportForm({
   submitLabel: string;
   onCancel: () => void;
   idPrefix: string;
-  originSuggestions: string[];
-  destinationSuggestions: string[];
+  categorySuggestions: string[];
+  subcategorySuggestions: string[];
+  shopSuggestions: string[];
 }) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -121,84 +100,69 @@ function TransportForm({
             className={inputClass}
           />
         </Field>
-        <Field label="Event type">
-          <select
-            value={form.eventType}
-            onChange={(e) => setForm({ ...form, eventType: e.target.value })}
+        <Field label="Amount (₱)">
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.amount}
+            onChange={(e) => setForm({ ...form, amount: e.target.value })}
+            placeholder="0.00"
             required
             className={inputClass}
-          >
-            {EVENT_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Mode (optional)">
-          <select
-            value={form.mode}
-            onChange={(e) => setForm({ ...form, mode: e.target.value })}
-            className={inputClass}
-          >
-            <option value="">— none —</option>
-            {MODES.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Item (optional)">
-          <select
-            value={form.item}
-            onChange={(e) => setForm({ ...form, item: e.target.value })}
-            className={inputClass}
-          >
-            <option value="">— none —</option>
-            {ITEMS.map((i) => (
-              <option key={i} value={i}>{i}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Start time (optional)">
-          <input
-            type="time"
-            value={form.startTime}
-            onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-            className={inputClass}
           />
         </Field>
-        <Field label="End time (optional)">
-          <input
-            type="time"
-            value={form.endTime}
-            onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Origin (optional)">
+        <Field label="Category">
           <input
             type="text"
-            list={`${idPrefix}-origins`}
-            value={form.origin}
-            onChange={(e) => setForm({ ...form, origin: e.target.value })}
-            placeholder="e.g. Home"
+            list={`${idPrefix}-categories`}
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            placeholder="e.g. Food"
+            required
             className={inputClass}
             autoComplete="off"
           />
-          <datalist id={`${idPrefix}-origins`}>
-            {originSuggestions.map((s) => <option key={s} value={s} />)}
+          <datalist id={`${idPrefix}-categories`}>
+            {categorySuggestions.map((s) => <option key={s} value={s} />)}
           </datalist>
         </Field>
-        <Field label="Destination (optional)">
+        <Field label="Subcategory (optional)">
           <input
             type="text"
-            list={`${idPrefix}-destinations`}
-            value={form.destination}
-            onChange={(e) => setForm({ ...form, destination: e.target.value })}
-            placeholder="e.g. Office"
+            list={`${idPrefix}-subcategories`}
+            value={form.subcategory}
+            onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+            placeholder="e.g. Groceries"
             className={inputClass}
             autoComplete="off"
           />
-          <datalist id={`${idPrefix}-destinations`}>
-            {destinationSuggestions.map((s) => <option key={s} value={s} />)}
+          <datalist id={`${idPrefix}-subcategories`}>
+            {subcategorySuggestions.map((s) => <option key={s} value={s} />)}
+          </datalist>
+        </Field>
+        <Field label="Item">
+          <input
+            type="text"
+            value={form.item}
+            onChange={(e) => setForm({ ...form, item: e.target.value })}
+            placeholder="e.g. Chicken rice"
+            required
+            className={inputClass}
+          />
+        </Field>
+        <Field label="Shop (optional)">
+          <input
+            type="text"
+            list={`${idPrefix}-shops`}
+            value={form.shop}
+            onChange={(e) => setForm({ ...form, shop: e.target.value })}
+            placeholder="e.g. 7-Eleven"
+            className={inputClass}
+            autoComplete="off"
+          />
+          <datalist id={`${idPrefix}-shops`}>
+            {shopSuggestions.map((s) => <option key={s} value={s} />)}
           </datalist>
         </Field>
       </div>
@@ -208,15 +172,6 @@ function TransportForm({
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
           rows={2}
           className={`${inputClass} resize-y`}
-        />
-      </Field>
-      <Field label="Video URL (optional)">
-        <input
-          type="url"
-          value={form.videoUrl}
-          onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
-          placeholder="https://youtube.com/watch?v=..."
-          className={inputClass}
         />
       </Field>
       {error && <p className="text-sm text-red-500">{error}</p>}
@@ -231,16 +186,17 @@ function TransportForm({
   );
 }
 
-export default function TransportsSection() {
-  const [data, setData] = useState<Transport[]>([]);
+export default function ExpensesSection() {
+  const [data, setData] = useState<Expense[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [fetching, setFetching] = useState(false);
   const [search, setSearch] = useState("");
 
-  const originSuggestions = [...new Set(data.map((r) => r.origin).filter(Boolean) as string[])].sort();
-  const destinationSuggestions = [...new Set(data.map((r) => r.destination).filter(Boolean) as string[])].sort();
+  const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
+  const [subcategorySuggestions, setSubcategorySuggestions] = useState<string[]>([]);
+  const [shopSuggestions, setShopSuggestions] = useState<string[]>([]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState<FormState>(defaultForm);
@@ -259,7 +215,7 @@ export default function TransportsSection() {
     try {
       const params = new URLSearchParams({ page: String(p), limit: String(PAGE_SIZE) });
       if (q) params.set("q", q);
-      const res = await fetch(`/api/admin/transports?${params}`);
+      const res = await fetch(`/api/admin/expenses?${params}`);
       if (res.ok) {
         const json = await res.json();
         setData(json.data ?? []);
@@ -272,8 +228,19 @@ export default function TransportsSection() {
     }
   }
 
+  async function fetchMeta() {
+    const res = await fetch("/api/admin/expenses/meta");
+    if (res.ok) {
+      const json = await res.json();
+      setCategorySuggestions(json.categories ?? []);
+      setSubcategorySuggestions(json.subcategories ?? []);
+      setShopSuggestions(json.shops ?? []);
+    }
+  }
+
   useEffect(() => {
     fetchPage(1, "");
+    fetchMeta();
   }, []);
 
   function handleSearchChange(value: string) {
@@ -293,7 +260,7 @@ export default function TransportsSection() {
     setAddError("");
     setAddLoading(true);
     try {
-      const res = await fetch("/api/admin/transports", {
+      const res = await fetch("/api/admin/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -302,28 +269,26 @@ export default function TransportsSection() {
         setForm(defaultForm);
         setShowAddModal(false);
         fetchPage(page, search.trim());
+        fetchMeta();
       } else {
         const json = await res.json();
-        setAddError(json.error || "Failed to add transport.");
+        setAddError(json.error || "Failed to add expense.");
       }
     } finally {
       setAddLoading(false);
     }
   }
 
-  function startEdit(row: Transport) {
+  function startEdit(row: Expense) {
     setEditingId(row.id);
     setEditForm({
       date: row.date,
-      startTime: row.startTime ?? "",
-      endTime: row.endTime ?? "",
-      eventType: row.eventType,
-      mode: row.mode ?? "",
-      item: row.item ?? "",
-      origin: row.origin ?? "",
-      destination: row.destination ?? "",
+      category: row.category,
+      subcategory: row.subcategory ?? "",
+      item: row.item,
+      amount: String(row.amount),
+      shop: row.shop ?? "",
       notes: row.notes ?? "",
-      videoUrl: row.videoUrl ?? "",
     });
     setEditError("");
   }
@@ -334,7 +299,7 @@ export default function TransportsSection() {
     setEditError("");
     setEditLoading(true);
     try {
-      const res = await fetch(`/api/admin/transports/${editingId}`, {
+      const res = await fetch(`/api/admin/expenses/${editingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editForm),
@@ -342,9 +307,10 @@ export default function TransportsSection() {
       if (res.ok) {
         setEditingId(null);
         fetchPage(page, search.trim());
+        fetchMeta();
       } else {
         const json = await res.json();
-        setEditError(json.error || "Failed to update transport.");
+        setEditError(json.error || "Failed to update expense.");
       }
     } finally {
       setEditLoading(false);
@@ -352,8 +318,8 @@ export default function TransportsSection() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Delete this transport entry? This cannot be undone.")) return;
-    await fetch(`/api/admin/transports/${id}`, { method: "DELETE" });
+    if (!confirm("Delete this expense? This cannot be undone.")) return;
+    await fetch(`/api/admin/expenses/${id}`, { method: "DELETE" });
     fetchPage(page, search.trim());
   }
 
@@ -362,7 +328,7 @@ export default function TransportsSection() {
       <section className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="font-heading font-bold text-base text-[var(--text)] flex items-center gap-2">
-            Transports ({total})
+            Expenses ({total})
             {fetching && <Spinner />}
           </h2>
           <div className="flex items-center gap-3">
@@ -383,88 +349,67 @@ export default function TransportsSection() {
         </div>
 
         {data.length === 0 ? (
-          <p className="text-sm text-[var(--text-muted)]">No transport entries found.</p>
+          <p className="text-sm text-[var(--text-muted)]">No expense entries found.</p>
         ) : (
           <>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
-                  <th className="pb-2 pr-4 font-medium">Date</th>
-                  <th className="pb-2 pr-4 font-medium">Type</th>
-                  <th className="pb-2 pr-4 font-medium">Mode / Item</th>
-                  <th className="pb-2 pr-4 font-medium">From → To</th>
-                  <th className="pb-2 pr-4 font-medium">Time</th>
-                  <th className="pb-2 pr-4 font-medium">Notes</th>
-                  <th className="pb-2 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((row) => {
-                  const dur = tripDuration(row.startTime, row.endTime);
-                  return (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
+                    <th className="pb-2 pr-4 font-medium">Date</th>
+                    <th className="pb-2 pr-4 font-medium">Category</th>
+                    <th className="pb-2 pr-4 font-medium">Item</th>
+                    <th className="pb-2 pr-4 font-medium">Shop</th>
+                    <th className="pb-2 pr-4 font-medium text-right">Amount</th>
+                    <th className="pb-2 pr-4 font-medium">Notes</th>
+                    <th className="pb-2 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.map((row) => (
                     <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top">
                       <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.date}</td>
-                      <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">{row.eventType}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap">
-                        {[row.mode, row.item].filter(Boolean).join(" / ") || "—"}
-                      </td>
                       <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">
-                        {row.origin || row.destination
-                          ? `${row.origin ?? "?"} → ${row.destination ?? "?"}`
-                          : "—"}
+                        {row.category}
+                        {row.subcategory && (
+                          <span className="text-[var(--text-muted)]"> / {row.subcategory}</span>
+                        )}
                       </td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">
-                        {row.startTime && row.endTime
-                          ? `${row.startTime}–${row.endTime}${dur ? ` (${dur})` : ""}`
-                          : row.startTime ?? "—"}
+                      <td className="py-2 pr-4 text-[var(--text)]">{row.item}</td>
+                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap">{row.shop ?? "—"}</td>
+                      <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap font-mono text-xs text-right">
+                        ₱{row.amount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="py-2 pr-4 text-[var(--text)] max-w-xs">{row.notes ?? "—"}</td>
+                      <td className="py-2 pr-4 text-[var(--text-muted)] max-w-xs">{row.notes ?? "—"}</td>
                       <td className="py-2">
                         <div className="flex gap-2 items-center">
-                          {row.videoUrl ? (
-                            <a
-                              href={row.videoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[#FF0000] hover:opacity-70 transition-opacity"
-                              title="Watch video"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                              </svg>
-                            </a>
-                          ) : (
-                            <span className="text-[var(--text-muted)]">—</span>
-                          )}
                           <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
                           <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
                         </div>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center gap-4 mt-4">
-              <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
-                ← Prev
-              </button>
-              <span className="text-sm text-[var(--text-muted)]">Page {page} of {totalPages}</span>
-              <button onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
-                Next →
-              </button>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-4 mt-4">
+                <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
+                  ← Prev
+                </button>
+                <span className="text-sm text-[var(--text-muted)]">Page {page} of {totalPages}</span>
+                <button onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
+                  Next →
+                </button>
+              </div>
+            )}
           </>
         )}
       </section>
 
       {showAddModal && (
-        <Modal title="Add transport entry" onClose={() => setShowAddModal(false)}>
-          <TransportForm
+        <Modal title="Add expense" onClose={() => setShowAddModal(false)}>
+          <ExpenseForm
             form={form}
             setForm={setForm}
             onSubmit={handleAdd}
@@ -473,15 +418,16 @@ export default function TransportsSection() {
             submitLabel="Add entry"
             onCancel={() => setShowAddModal(false)}
             idPrefix="add"
-            originSuggestions={originSuggestions}
-            destinationSuggestions={destinationSuggestions}
+            categorySuggestions={categorySuggestions}
+            subcategorySuggestions={subcategorySuggestions}
+            shopSuggestions={shopSuggestions}
           />
         </Modal>
       )}
 
       {editingId !== null && (
-        <Modal title="Edit transport entry" onClose={() => setEditingId(null)}>
-          <TransportForm
+        <Modal title="Edit expense" onClose={() => setEditingId(null)}>
+          <ExpenseForm
             form={editForm}
             setForm={setEditForm}
             onSubmit={handleEdit}
@@ -490,8 +436,9 @@ export default function TransportsSection() {
             submitLabel="Save changes"
             onCancel={() => setEditingId(null)}
             idPrefix="edit"
-            originSuggestions={originSuggestions}
-            destinationSuggestions={destinationSuggestions}
+            categorySuggestions={categorySuggestions}
+            subcategorySuggestions={subcategorySuggestions}
+            shopSuggestions={shopSuggestions}
           />
         </Modal>
       )}
