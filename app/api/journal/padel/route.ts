@@ -26,6 +26,7 @@ type MatchSet = {
   gamesWon: number;
   gamesLost: number;
   won: boolean;
+  videoUrl: string | null;
 };
 
 export type RecentMatch = {
@@ -156,7 +157,7 @@ export async function GET(req: NextRequest) {
       });
     }
     const match = matchMap.get(row.matchId)!;
-    match.sets.push({ setNumber: row.setNumber, gamesWon: row.gamesWon, gamesLost: row.gamesLost, won });
+    match.sets.push({ setNumber: row.setNumber, gamesWon: row.gamesWon, gamesLost: row.gamesLost, won, videoUrl: row.videoUrl ?? null });
     if (won) match.setsWon++;
     else match.setsLost++;
   }

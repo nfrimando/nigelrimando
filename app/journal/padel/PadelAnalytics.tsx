@@ -253,15 +253,32 @@ function WinRateBadge({ rate }: { rate: number }) {
   );
 }
 
+function YoutubeIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  );
+}
+
 function MatchRow({ match }: { match: RecentMatch }) {
   const matchWon = match.setsWon > match.setsLost;
   const matchLost = match.setsLost > match.setsWon;
+
+  const videoUrls = match.sets.map((s) => s.videoUrl).filter(Boolean) as string[];
+  const uniqueUrls = [...new Set(videoUrls)];
+  const singleUrl = uniqueUrls.length === 1 ? uniqueUrls[0] : null;
+  const multiUrls = uniqueUrls.length > 1
+    ? match.sets
+        .map((s, i) => s.videoUrl ? { label: `S${i + 1}`, url: s.videoUrl } : null)
+        .filter(Boolean) as { label: string; url: string }[]
+    : [];
 
   return (
     <div className="py-4 first:pt-0 last:pb-0 flex flex-col gap-2">
       {/* Top row: date + result badge + venue */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-medium text-[var(--text-muted)]">
             {match.date}
           </span>
@@ -270,6 +287,30 @@ function MatchRow({ match }: { match: RecentMatch }) {
               {match.venue}
             </span>
           )}
+          {singleUrl && (
+            <a
+              href={singleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#FF0000] hover:opacity-70 transition-opacity"
+              title="Watch video"
+            >
+              <YoutubeIcon />
+            </a>
+          )}
+          {multiUrls.map(({ label, url }) => (
+            <a
+              key={label}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-0.5 text-[#FF0000] hover:opacity-70 transition-opacity"
+              title={`Watch ${label}`}
+            >
+              <YoutubeIcon />
+              <span className="text-[10px] font-medium">{label}</span>
+            </a>
+          ))}
         </div>
         <span
           className={[

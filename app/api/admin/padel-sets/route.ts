@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
     format,
     venue,
     courtNumber,
+    videoUrl,
   } = body;
 
   if (
@@ -90,6 +91,7 @@ export async function POST(req: NextRequest) {
       format: format || null,
       venue: venue || null,
       courtNumber: courtNumber ? Number(courtNumber) : null,
+      videoUrl: videoUrl?.trim() || null,
     })
     .returning();
 

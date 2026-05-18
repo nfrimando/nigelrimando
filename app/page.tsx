@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Nav from "@/components/Nav";
 import { db } from "@/lib/db";
-import { sets, padelSets } from "@/lib/schema";
-import { count, sql } from "drizzle-orm";
+import { sets, padelSets, transports } from "@/lib/schema";
+import { and, count, eq, sql } from "drizzle-orm";
 import { Dumbbell } from "lucide-react";
 
 // ── Components ────────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ function formatDate(dateStr: string | null): string {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function Home() {
-  const [[gymStats], [padelStats]] = await Promise.all([
+  const [[gymStats], [padelStats], [ebikeStats]] = await Promise.all([
     db
       .select({
         totalSets: count(),
@@ -56,6 +56,13 @@ export default async function Home() {
         totalWins: sql<number>`SUM(CASE WHEN ${padelSets.gamesWon} > ${padelSets.gamesLost} THEN 1 ELSE 0 END)`,
       })
       .from(padelSets),
+    db
+      .select({
+        totalTrips: count(),
+        latestDate: sql<string | null>`MAX(${transports.date})`,
+      })
+      .from(transports)
+      .where(and(eq(transports.eventType, "trip"), eq(transports.mode, "ebike"))),
   ]);
 
   return (
@@ -77,7 +84,7 @@ export default async function Home() {
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold font-heading tracking-tight leading-[1.05] text-text mb-6">
                 Data, Stats, Fitness,
                 <br className="hidden sm:block" />
-                Padel, and Milk Tea
+                Padel, Ebike, and Milk Tea
               </h1>
               <p className="text-lg text-muted leading-relaxed max-w-[600px] mb-10">
                 This is my corner of the internet where I share what I build,
@@ -146,7 +153,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-5">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-5">
             {/* Exercise Log card */}
             <div className="rounded-[20px] bg-surface border border-border p-7 flex-1 max-w-sm">
               <p className="text-xs font-mono text-muted uppercase tracking-widest mb-4">
@@ -227,6 +234,49 @@ export default async function Home() {
               </div>
               <a
                 href="/journal/padel"
+                className="inline-block px-4 py-2 rounded-[14px] bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors duration-[180ms]"
+              >
+                View log →
+              </a>
+            </div>
+
+            {/* Ebike card */}
+            <div className="rounded-[20px] bg-surface border border-border p-7 flex-1 max-w-sm">
+              <p className="text-xs font-mono text-muted uppercase tracking-widest mb-4">
+                Ebike Trips
+              </p>
+              <div className="flex items-center gap-2 mb-1">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-accent shrink-0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="5.5" cy="17.5" r="3.5" />
+                  <circle cx="18.5" cy="17.5" r="3.5" />
+                  <path d="M15 6h-4l-2 5.5" />
+                  <path d="M5.5 17.5L9 11l3 6.5" />
+                  <path d="M15 6l3.5 11.5" />
+                  <path d="M12 6h4" />
+                </svg>
+                <p className="text-lg font-bold font-heading text-text">
+                  Ride tracker
+                </p>
+              </div>
+              <p className="text-sm text-muted mb-6">
+                Daily commutes and rides, logged by trip.
+              </p>
+              <div className="flex gap-8 mb-7">
+                <div>
+                  <p className="text-2xl font-bold font-heading text-text leading-none">
+                    {ebikeStats?.totalTrips.toLocaleString() ?? "—"}
+                  </p>
+                  <p className="text-xs text-muted mt-1">trips recorded</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-heading text-text leading-none">
+                    {formatDate(ebikeStats?.latestDate ?? null)}
+                  </p>
+                  <p className="text-xs text-muted mt-1">last ride</p>
+                </div>
+              </div>
+              <a
+                href="/journal/ebike"
                 className="inline-block px-4 py-2 rounded-[14px] bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors duration-[180ms]"
               >
                 View log →

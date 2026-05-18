@@ -5,8 +5,19 @@ import ExercisesSection from "./ExercisesSection";
 import SetsSection from "./SetsSection";
 import PadelSetsSection from "./PadelSetsSection";
 import PersonsSection from "./PersonsSection";
+import ThoughtsSection from "./ThoughtsSection";
+import InteractionsSection from "./InteractionsSection";
+import TransportsSection from "./TransportsSection";
 
-const TABS = ["Exercises", "Sets", "Padel Sets", "Persons"] as const;
+const TABS = [
+  "Exercises",
+  "Sets",
+  "Padel Sets",
+  "Persons",
+  "Thoughts",
+  "Interactions",
+  "Transports",
+] as const;
 type Tab = (typeof TABS)[number];
 
 function isValidTab(t: string | null): t is Tab {
@@ -32,7 +43,17 @@ export default function AdminShell() {
     <div className="min-h-screen bg-[var(--bg)]">
       <header className="border-b border-[var(--border)] bg-[var(--surface)]">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="font-heading font-bold text-lg text-[var(--text)]">Admin</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="font-heading font-bold text-lg text-[var(--text)]">
+              Admin
+            </h1>
+            <a
+              href="/"
+              className="text-xs px-3 py-1 rounded-[14px] border border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+            >
+              ← Back to Home
+            </a>
+          </div>
           <button
             onClick={handleSignOut}
             className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
@@ -63,6 +84,9 @@ export default function AdminShell() {
         {activeTab === "Sets" && <SetsSection />}
         {activeTab === "Padel Sets" && <PadelSetsSection />}
         {activeTab === "Persons" && <PersonsSection />}
+        {activeTab === "Thoughts" && <ThoughtsSection />}
+        {activeTab === "Interactions" && <InteractionsSection />}
+        {activeTab === "Transports" && <TransportsSection />}
       </div>
     </div>
   );

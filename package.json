@@ -1,6 +1,6 @@
 {
   "name": "nigelrimando",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,7 +10,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed.ts",
-    "db:seed-padel": "tsx scripts/seed-padel.ts"
+    "db:seed-padel": "tsx scripts/seed-padel.ts",
+    "db:seed-journal": "tsx scripts/seed-journal.ts",
+    "db:seed-transports": "tsx scripts/seed-transports.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",

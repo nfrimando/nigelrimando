@@ -32,6 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     format,
     venue,
     courtNumber,
+    videoUrl,
   } = body;
 
   const fields: Record<string, unknown> = { updatedAt: sql`(unixepoch())` };
@@ -47,6 +48,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (format !== undefined) fields.format = format || null;
   if (venue !== undefined) fields.venue = venue || null;
   if (courtNumber !== undefined) fields.courtNumber = courtNumber ? Number(courtNumber) : null;
+  if (videoUrl !== undefined) fields.videoUrl = videoUrl?.trim() || null;
 
   const [row] = await db
     .update(padelSets)

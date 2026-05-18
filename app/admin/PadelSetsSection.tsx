@@ -87,6 +87,7 @@ type EditForm = {
   venue: string;
   format: string;
   courtNumber: string;
+  videoUrl: string;
 };
 
 export default function PadelSetsSection() {
@@ -111,7 +112,7 @@ export default function PadelSetsSection() {
     format: "",
     courtNumber: "",
   });
-  const [setScore, setSetScore] = useState({ gamesWon: "", gamesLost: "" });
+  const [setScore, setSetScore] = useState({ gamesWon: "", gamesLost: "", videoUrl: "" });
   const [addError, setAddError] = useState("");
   const [addLoading, setAddLoading] = useState(false);
 
@@ -129,6 +130,7 @@ export default function PadelSetsSection() {
     venue: "",
     format: "",
     courtNumber: "",
+    videoUrl: "",
   });
   const [editLoading, setEditLoading] = useState(false);
 
@@ -197,7 +199,7 @@ export default function PadelSetsSection() {
       format: "",
       courtNumber: "",
     });
-    setSetScore({ gamesWon: "", gamesLost: "" });
+    setSetScore({ gamesWon: "", gamesLost: "", videoUrl: "" });
     const res = await fetch("/api/admin/padel-sets/next-match-id");
     const json = await res.json();
     setCurrentMatchId(json.nextMatchId);
@@ -236,6 +238,7 @@ export default function PadelSetsSection() {
           courtNumber: matchForm.courtNumber
             ? Number(matchForm.courtNumber)
             : null,
+          videoUrl: setScore.videoUrl || null,
         }),
       });
       if (!res.ok) {
@@ -244,7 +247,7 @@ export default function PadelSetsSection() {
         return;
       }
       setCurrentSetNumber((n) => n + 1);
-      setSetScore({ gamesWon: "", gamesLost: "" });
+      setSetScore({ gamesWon: "", gamesLost: "", videoUrl: "" });
       setAddPhase("set");
       fetchRows(1, search);
       setPage(1);
@@ -272,6 +275,7 @@ export default function PadelSetsSection() {
       venue: row.venue ?? "",
       format: row.format ?? "",
       courtNumber: row.courtNumber != null ? String(row.courtNumber) : "",
+      videoUrl: row.videoUrl ?? "",
     });
   }
 
@@ -294,6 +298,7 @@ export default function PadelSetsSection() {
           venue: editForm.venue,
           format: editForm.format,
           courtNumber: editForm.courtNumber,
+          videoUrl: editForm.videoUrl,
         }),
       });
       if (res.ok) {
@@ -380,6 +385,7 @@ export default function PadelSetsSection() {
                 <th className="pb-2 pr-3">Won</th>
                 <th className="pb-2 pr-3">Lost</th>
                 <th className="pb-2 pr-3">Venue</th>
+                <th className="pb-2 pr-3">Video</th>
                 <th className="pb-2"></th>
               </tr>
             </thead>
@@ -481,6 +487,17 @@ export default function PadelSetsSection() {
                         }
                       />
                     </td>
+                    <td className="py-1 pr-2">
+                      <input
+                        className={inlineInputClass}
+                        style={{ width: 120 }}
+                        placeholder="https://..."
+                        value={editForm.videoUrl}
+                        onChange={(e) =>
+                          setEditForm((f) => ({ ...f, videoUrl: e.target.value }))
+                        }
+                      />
+                    </td>
                     <td className="py-1 flex gap-1">
                       <button
                         onClick={() => saveEdit(row.id)}
@@ -523,6 +540,23 @@ export default function PadelSetsSection() {
                     <td className="py-2 pr-3 font-mono">{row.gamesLost}</td>
                     <td className="py-2 pr-3 text-[var(--text-muted)]">
                       {row.venue ?? "—"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {row.videoUrl ? (
+                        <a
+                          href={row.videoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#FF0000] hover:opacity-70 transition-opacity"
+                          title="Watch video"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                          </svg>
+                        </a>
+                      ) : (
+                        <span className="text-[var(--text-muted)]">—</span>
+                      )}
                     </td>
                     <td className="py-2 flex gap-1">
                       <button
@@ -729,6 +763,19 @@ export default function PadelSetsSection() {
                 }
               />
             </Field>
+            <div className="col-span-2">
+              <Field label="Video URL (optional)">
+                <input
+                  type="url"
+                  className={inputClass}
+                  placeholder="https://youtube.com/watch?v=..."
+                  value={setScore.videoUrl}
+                  onChange={(e) =>
+                    setSetScore((s) => ({ ...s, videoUrl: e.target.value }))
+                  }
+                />
+              </Field>
+            </div>
           </div>
 
           <div className="flex gap-2 justify-end">
