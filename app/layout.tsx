@@ -22,8 +22,21 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://nigelrimando.com"),
   title: "Nigel Rimando — Data Professional & Consultant",
   description: "Data, Stats, Fitness, Padel, and Milk Tea",
+  openGraph: {
+    title: "Nigel Rimando — Data Professional & Consultant",
+    description: "Data, Stats, Fitness, Padel, and Milk Tea",
+    url: "https://nigelrimando.com",
+    siteName: "Nigel Rimando",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Nigel Rimando — Data Professional & Consultant",
+    description: "Data, Stats, Fitness, Padel, and Milk Tea",
+  },
 };
 
 export default function RootLayout({

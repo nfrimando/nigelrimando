@@ -193,8 +193,8 @@ export async function GET(req: NextRequest) {
     sets: m.sets.sort((a, b) => a.setNumber - b.setNumber),
   }));
 
-  // Recent form: last 10 chronologically (rows are desc, so reverse slice)
-  const formRows = rows.slice(0, 10).reverse();
+  // Recent form: last 9 chronologically (rows are desc, so reverse slice)
+  const formRows = rows.slice(0, 9).reverse();
   const recentForm: ("W" | "L")[] = formRows.map((r) =>
     r.gamesWon > r.gamesLost ? "W" : "L",
   );
