@@ -62,7 +62,9 @@ export default async function Home() {
         latestDate: sql<string | null>`MAX(${transports.date})`,
       })
       .from(transports)
-      .where(and(eq(transports.eventType, "trip"), eq(transports.mode, "ebike"))),
+      .where(
+        and(eq(transports.eventType, "trip"), eq(transports.mode, "ebike")),
+      ),
   ]);
 
   return (
@@ -84,7 +86,7 @@ export default async function Home() {
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold font-heading tracking-tight leading-[1.05] text-text mb-6">
                 Data, Stats, Fitness,
                 <br className="hidden sm:block" />
-                Padel, Ebike, and Milk Tea
+                Padel, and Milk Tea
               </h1>
               <p className="text-lg text-muted leading-relaxed max-w-[600px] mb-10">
                 This is my corner of the internet where I share what I build,
@@ -196,16 +198,62 @@ export default async function Home() {
                 Padel
               </p>
               <div className="flex items-center gap-2 mb-1">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-accent shrink-0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="text-accent shrink-0"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   {/* Padel racket head (rounded rectangle) */}
                   <rect x="5" y="2" width="14" height="14" rx="4" ry="4" />
                   {/* Holes in the face */}
-                  <circle cx="9" cy="7" r="1" fill="currentColor" stroke="none" />
-                  <circle cx="12" cy="7" r="1" fill="currentColor" stroke="none" />
-                  <circle cx="15" cy="7" r="1" fill="currentColor" stroke="none" />
-                  <circle cx="9" cy="10" r="1" fill="currentColor" stroke="none" />
-                  <circle cx="12" cy="10" r="1" fill="currentColor" stroke="none" />
-                  <circle cx="15" cy="10" r="1" fill="currentColor" stroke="none" />
+                  <circle
+                    cx="9"
+                    cy="7"
+                    r="1"
+                    fill="currentColor"
+                    stroke="none"
+                  />
+                  <circle
+                    cx="12"
+                    cy="7"
+                    r="1"
+                    fill="currentColor"
+                    stroke="none"
+                  />
+                  <circle
+                    cx="15"
+                    cy="7"
+                    r="1"
+                    fill="currentColor"
+                    stroke="none"
+                  />
+                  <circle
+                    cx="9"
+                    cy="10"
+                    r="1"
+                    fill="currentColor"
+                    stroke="none"
+                  />
+                  <circle
+                    cx="12"
+                    cy="10"
+                    r="1"
+                    fill="currentColor"
+                    stroke="none"
+                  />
+                  <circle
+                    cx="15"
+                    cy="10"
+                    r="1"
+                    fill="currentColor"
+                    stroke="none"
+                  />
                   {/* Handle */}
                   <line x1="12" y1="16" x2="12" y2="22" strokeWidth="2.5" />
                 </svg>
@@ -246,7 +294,17 @@ export default async function Home() {
                 Ebike Trips
               </p>
               <div className="flex items-center gap-2 mb-1">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-accent shrink-0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="text-accent shrink-0"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <circle cx="5.5" cy="17.5" r="3.5" />
                   <circle cx="18.5" cy="17.5" r="3.5" />
                   <path d="M15 6h-4l-2 5.5" />
