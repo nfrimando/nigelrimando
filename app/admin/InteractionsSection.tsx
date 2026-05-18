@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Person } from "@/lib/schema";
 
 type InteractionRow = {
@@ -93,10 +93,8 @@ export default function InteractionsSection() {
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<FormState>(defaultForm);
-  const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
-
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [saveError, setSaveError] = useState("");
 
   async function fetchPage(p: number, q: string) {
     setFetching(true);
@@ -128,10 +126,13 @@ export default function InteractionsSection() {
 
   function handleSearchChange(value: string) {
     setSearch(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      fetchPage(1, value.trim());
-    }, 300);
+  }
+
+  function commitSearch(q: string) {
+    const trimmed = q.trim();
+    if (trimmed.length === 0 || trimmed.length >= 3) {
+      fetchPage(1, trimmed);
+    }
   }
 
   function goToPage(p: number) {
@@ -176,23 +177,36 @@ export default function InteractionsSection() {
   async function handleEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editingId) return;
-    setEditError("");
-    setEditLoading(true);
-    try {
-      const res = await fetch(`/api/admin/interactions/${editingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
-      });
-      if (res.ok) {
-        setEditingId(null);
-        fetchPage(page, search.trim());
-      } else {
-        const json = await res.json();
-        setEditError(json.error || "Failed to update interaction.");
-      }
-    } finally {
-      setEditLoading(false);
+
+    const id = editingId;
+    const originalRow = data.find((r) => r.id === id)!;
+    const person = persons.find((p) => String(p.id) === editForm.personId);
+    const optimistic: InteractionRow = {
+      ...originalRow,
+      entryDate: editForm.entryDate,
+      personId: editForm.personId ? Number(editForm.personId) : null,
+      personName: person?.name ?? null,
+      personNickname: person?.nickname ?? null,
+      rank: editForm.rank ? Number(editForm.rank) : null,
+      note: editForm.note || null,
+      sentiment: editForm.sentiment ? Number(editForm.sentiment) : null,
+    };
+
+    setData((prev) => prev.map((r) => (r.id === id ? optimistic : r)));
+    setEditingId(null);
+
+    const res = await fetch(`/api/admin/interactions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editForm),
+    });
+    if (!res.ok) {
+      const json = await res.json();
+      setData((prev) => prev.map((r) => (r.id === id ? originalRow : r)));
+      setEditingId(id);
+      setEditError(json.error || "Failed to update interaction.");
+      setSaveError("Failed to save. Changes reverted.");
+      setTimeout(() => setSaveError(""), 3000);
     }
   }
 
@@ -205,6 +219,7 @@ export default function InteractionsSection() {
   return (
     <div className="flex flex-col gap-6">
       <section className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6">
+        {saveError && <p className="text-sm text-red-500 mb-3">{saveError}</p>}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="font-heading font-bold text-base text-[var(--text)] flex items-center gap-2">
             Interactions ({total})
@@ -215,6 +230,8 @@ export default function InteractionsSection() {
               type="search"
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
+              onBlur={(e) => commitSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") commitSearch(search); }}
               placeholder="Search…"
               className={`${inputClass} max-w-[180px]`}
             />
@@ -245,13 +262,13 @@ export default function InteractionsSection() {
                 </thead>
                 <tbody>
                   {data.map((row) => (
-                    <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top">
+                    <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors" onClick={() => startEdit(row)}>
                       <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.entryDate}</td>
                       <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">{personDisplay(row)}</td>
                       <td className="py-2 pr-4 text-[var(--text-muted)]">{row.rank ?? "—"}</td>
                       <td className="py-2 pr-4 text-[var(--text-muted)]">{sentimentLabel(row.sentiment)}</td>
                       <td className="py-2 pr-4 text-[var(--text)] max-w-xs">{row.note ?? "—"}</td>
-                      <td className="py-2">
+                      <td className="py-2" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-2">
                           <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
                           <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
@@ -404,10 +421,7 @@ export default function InteractionsSection() {
             </Field>
             {editError && <p className="text-sm text-red-500">{editError}</p>}
             <div className="flex gap-3 pt-1">
-              <button type="submit" disabled={editLoading} className={`${submitClass} inline-flex items-center gap-2`}>
-                {editLoading && <Spinner light />}
-                {editLoading ? "Saving…" : "Save changes"}
-              </button>
+              <button type="submit" className={submitClass}>Save changes</button>
               <button type="button" onClick={() => setEditingId(null)} className={cancelClass}>Cancel</button>
             </div>
           </form>

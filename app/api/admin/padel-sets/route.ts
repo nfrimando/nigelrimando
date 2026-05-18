@@ -3,8 +3,8 @@ import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { db } from "@/lib/db";
-import { padelSets } from "@/lib/schema";
-import { desc, asc, like, or, count, sql } from "drizzle-orm";
+import { padelSets, persons } from "@/lib/schema";
+import { desc, asc, like, or, inArray, count, sql } from "drizzle-orm";
 
 async function requireAuth() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
@@ -23,8 +23,28 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q")?.trim() ?? "";
   const offset = (page - 1) * limit;
 
+  let matchingPersonIds: number[] = [];
+  if (q) {
+    const matched = await db
+      .select({ id: persons.id })
+      .from(persons)
+      .where(or(like(persons.name, `%${q}%`), like(persons.nickname, `%${q}%`)));
+    matchingPersonIds = matched.map((p) => p.id);
+  }
+
   const condition = q
-    ? or(like(padelSets.venue, `%${q}%`), like(padelSets.format, `%${q}%`))
+    ? or(
+        like(padelSets.venue, `%${q}%`),
+        like(padelSets.format, `%${q}%`),
+        ...(matchingPersonIds.length > 0
+          ? [
+              inArray(padelSets.teammateLeft, matchingPersonIds),
+              inArray(padelSets.teammateRight, matchingPersonIds),
+              inArray(padelSets.opponentLeft, matchingPersonIds),
+              inArray(padelSets.opponentRight, matchingPersonIds),
+            ]
+          : []),
+      )
     : undefined;
 
   const [{ total }] = await db.select({ total: count() }).from(padelSets).where(condition);

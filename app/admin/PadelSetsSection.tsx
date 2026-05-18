@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { PadelSet, Person } from "@/lib/schema";
 
 const PAGE_SIZE = 25;
@@ -201,8 +201,7 @@ export default function PadelSetsSection() {
     videoUrl: "",
   });
   const [editLoading, setEditLoading] = useState(false);
-
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [saveError, setSaveError] = useState("");
 
   function personDisplay(id: number) {
     const p = persons.find((p) => p.id === id);
@@ -256,11 +255,14 @@ export default function PadelSetsSection() {
 
   function handleSearchChange(val: string) {
     setSearch(val);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
+  }
+
+  function commitSearch(q: string) {
+    const trimmed = q.trim();
+    if (trimmed.length === 0 || trimmed.length >= 3) {
       setPage(1);
-      fetchRows(1, val);
-    }, 300);
+      fetchRows(1, trimmed);
+    }
   }
 
   async function openAddModal() {
@@ -362,6 +364,25 @@ export default function PadelSetsSection() {
   }
 
   async function saveEdit(id: number) {
+    const originalRow = rows.find((r) => r.id === id)!;
+    const optimistic: PadelSet = {
+      ...originalRow,
+      date: editForm.date,
+      matchId: Number(editForm.matchId),
+      setNumber: Number(editForm.setNumber),
+      teammateLeft: editForm.teammateLeft ? Number(editForm.teammateLeft) : originalRow.teammateLeft,
+      teammateRight: editForm.teammateRight ? Number(editForm.teammateRight) : originalRow.teammateRight,
+      opponentLeft: editForm.opponentLeft ? Number(editForm.opponentLeft) : originalRow.opponentLeft,
+      opponentRight: editForm.opponentRight ? Number(editForm.opponentRight) : originalRow.opponentRight,
+      gamesWon: Number(editForm.gamesWon),
+      gamesLost: Number(editForm.gamesLost),
+      venue: editForm.venue || null,
+      format: editForm.format || null,
+      courtNumber: editForm.courtNumber || null,
+      videoUrl: editForm.videoUrl || null,
+    };
+    setRows((prev) => prev.map((r) => (r.id === id ? optimistic : r)));
+    setEditingId(null);
     setEditLoading(true);
     try {
       const res = await fetch(`/api/admin/padel-sets/${id}`, {
@@ -386,7 +407,11 @@ export default function PadelSetsSection() {
       if (res.ok) {
         const updated = await res.json();
         setRows((prev) => prev.map((r) => (r.id === id ? updated : r)));
-        setEditingId(null);
+      } else {
+        setRows((prev) => prev.map((r) => (r.id === id ? originalRow : r)));
+        setEditingId(id);
+        setSaveError("Failed to save. Changes reverted.");
+        setTimeout(() => setSaveError(""), 3000);
       }
     } finally {
       setEditLoading(false);
@@ -413,15 +438,19 @@ export default function PadelSetsSection() {
       <div className="flex items-center justify-between mb-4">
         <input
           type="text"
-          placeholder="Search venue or format…"
+          placeholder="Search venue, format, or player…"
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
+          onBlur={(e) => commitSearch(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") commitSearch(search); }}
           className={inputClass + " max-w-xs"}
         />
         <button onClick={openAddModal} className={submitClass}>
           + Add Match
         </button>
       </div>
+
+      {saveError && <p className="text-sm text-red-500 mb-3">{saveError}</p>}
 
       {fetching ? (
         <p className="text-sm text-[var(--text-muted)]">Loading…</p>
@@ -573,7 +602,8 @@ export default function PadelSetsSection() {
                 ) : (
                   <tr
                     key={row.id}
-                    className="border-b border-[var(--border)] hover:bg-[var(--surface-alt)] transition-colors"
+                    className="border-b border-[var(--border)] hover:bg-[var(--surface-alt)] transition-colors cursor-pointer"
+                    onClick={() => startEdit(row)}
                   >
                     <td className="py-2 pr-3 text-[var(--text-muted)]">
                       {row.matchId}
@@ -592,7 +622,7 @@ export default function PadelSetsSection() {
                     <td className="py-2 pr-3 text-[var(--text-muted)]">
                       {row.courtNumber ?? "—"}
                     </td>
-                    <td className="py-2 pr-3">
+                    <td className="py-2 pr-3" onClick={(e) => e.stopPropagation()}>
                       {row.videoUrl ? (
                         <a
                           href={row.videoUrl}
@@ -609,7 +639,7 @@ export default function PadelSetsSection() {
                         <span className="text-[var(--text-muted)]">—</span>
                       )}
                     </td>
-                    <td className="py-2 flex gap-1">
+                    <td className="py-2 flex gap-1" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => startEdit(row)}
                         className="text-xs text-[var(--accent)] hover:underline"

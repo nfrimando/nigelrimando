@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Exercise, Set as SetRow } from "@/lib/schema";
 
 function Spinner({ light }: { light?: boolean }) {
@@ -35,7 +35,6 @@ export default function SetsSection() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fetching, setFetching] = useState(false);
 
   // Add modal
@@ -47,6 +46,7 @@ export default function SetsSection() {
   // Inline edit state
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<typeof defaultForm>>({});
+  const [saveError, setSaveError] = useState("");
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<globalThis.Set<number>>(new globalThis.Set());
@@ -93,11 +93,14 @@ export default function SetsSection() {
 
   function handleSearchChange(val: string) {
     setSearch(val);
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => {
+  }
+
+  function commitSearch(q: string) {
+    const trimmed = q.trim();
+    if (trimmed.length === 0 || trimmed.length >= 3) {
       setPage(1);
-      fetchSets(1, val);
-    }, 300);
+      fetchSets(1, trimmed);
+    }
   }
 
   function goToPage(p: number) {
@@ -154,6 +157,21 @@ export default function SetsSection() {
   }
 
   async function saveEdit(id: number) {
+    const originalRow = sets.find((s) => s.id === id)!;
+    const optimistic: SetRow = {
+      ...originalRow,
+      date: editForm.date ?? originalRow.date,
+      block: editForm.block ?? originalRow.block,
+      week: editForm.week !== undefined ? Number(editForm.week) : originalRow.week,
+      exerciseId: editForm.exerciseId !== undefined ? Number(editForm.exerciseId) : originalRow.exerciseId,
+      measure: editForm.measure ?? originalRow.measure,
+      value: editForm.value !== undefined && editForm.value !== "" ? Number(editForm.value) : null,
+      planned: editForm.planned !== undefined && editForm.planned !== "" ? Number(editForm.planned) : null,
+      actual: editForm.actual !== undefined && editForm.actual !== "" ? Number(editForm.actual) : null,
+      notes: editForm.notes || null,
+    };
+    setSets((prev) => prev.map((s) => (s.id === id ? optimistic : s)));
+    setEditingId(null);
     const res = await fetch(`/api/admin/sets/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -162,7 +180,11 @@ export default function SetsSection() {
     if (res.ok) {
       const updated = await res.json();
       setSets((prev) => prev.map((s) => (s.id === id ? updated : s)));
-      setEditingId(null);
+    } else {
+      setSets((prev) => prev.map((s) => (s.id === id ? originalRow : s)));
+      setEditingId(id);
+      setSaveError("Failed to save. Changes reverted.");
+      setTimeout(() => setSaveError(""), 3000);
     }
   }
 
@@ -246,6 +268,7 @@ export default function SetsSection() {
     <div className="flex flex-col gap-6">
       {/* Sets Table */}
       <section className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6">
+        {saveError && <p className="text-sm text-red-500 mb-3">{saveError}</p>}
         {/* Header row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="font-heading font-bold text-base text-[var(--text)] flex items-center gap-2">
@@ -257,6 +280,8 @@ export default function SetsSection() {
               type="search"
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
+              onBlur={(e) => commitSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") commitSearch(search); }}
               placeholder="Search exercise…"
               className={`${inputClass} max-w-[180px]`}
             />
@@ -360,8 +385,8 @@ export default function SetsSection() {
                   }
 
                   return (
-                    <tr key={s.id} className={rowBase}>
-                      <td className="py-2 pr-3">
+                    <tr key={s.id} className={`${rowBase} cursor-pointer`} onClick={() => startEdit(s)}>
+                      <td className="py-2 pr-3" onClick={(e) => e.stopPropagation()}>
                         <input type="checkbox" checked={selectedIds.has(s.id)} onChange={() => toggleSelect(s.id)} className="accent-[var(--accent)]" />
                       </td>
                       <td className={`py-2 pr-4 ${isPlanned ? "text-[var(--text-muted)]" : "text-[var(--text)]"}`}>{s.date}</td>
@@ -378,7 +403,7 @@ export default function SetsSection() {
                         )}
                       </td>
                       <td className="py-2 pr-4 text-[var(--text-muted)]">{s.notes ?? "—"}</td>
-                      <td className="py-2">
+                      <td className="py-2" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-3">
                           <button onClick={() => startEdit(s)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
                           <button onClick={() => handleDelete(s.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>

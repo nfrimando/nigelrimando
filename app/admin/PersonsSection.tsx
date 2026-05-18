@@ -57,6 +57,7 @@ export default function PersonsSection() {
   const [fetching, setFetching] = useState(false);
   const [deleteError, setDeleteError] = useState<{ id: number; message: string } | null>(null);
   const [search, setSearch] = useState("");
+  const [committedSearch, setCommittedSearch] = useState("");
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [addName, setAddName] = useState("");
@@ -68,6 +69,7 @@ export default function PersonsSection() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editState, setEditState] = useState<EditState>({ name: "", nickname: "", imageUrl: "" });
   const [editLoading, setEditLoading] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   async function fetchPersons() {
     setFetching(true);
@@ -124,6 +126,15 @@ export default function PersonsSection() {
 
   async function saveEdit(id: number) {
     if (!editState.name.trim()) return;
+    const originalPerson = persons.find((p) => p.id === id)!;
+    const optimistic: Person = {
+      ...originalPerson,
+      name: editState.name.trim(),
+      nickname: editState.nickname.trim() || null,
+      imageUrl: editState.imageUrl.trim() || null,
+    };
+    setPersons((prev) => prev.map((p) => (p.id === id ? optimistic : p)));
+    setEditingId(null);
     setEditLoading(true);
     try {
       const res = await fetch(`/api/admin/persons/${id}`, {
@@ -138,7 +149,11 @@ export default function PersonsSection() {
       if (res.ok) {
         const updated = await res.json();
         setPersons((prev) => prev.map((p) => (p.id === id ? updated : p)));
-        setEditingId(null);
+      } else {
+        setPersons((prev) => prev.map((p) => (p.id === id ? originalPerson : p)));
+        setEditingId(id);
+        setSaveError("Failed to save. Changes reverted.");
+        setTimeout(() => setSaveError(""), 3000);
       }
     } finally {
       setEditLoading(false);
@@ -157,9 +172,16 @@ export default function PersonsSection() {
     }
   }
 
-  const filtered = search.trim()
+  function commitSearch(q: string) {
+    const trimmed = q.trim();
+    if (trimmed.length === 0 || trimmed.length >= 3) {
+      setCommittedSearch(trimmed);
+    }
+  }
+
+  const filtered = committedSearch
     ? persons.filter((p) => {
-        const q = search.toLowerCase();
+        const q = committedSearch.toLowerCase();
         return (
           p.name.toLowerCase().includes(q) ||
           (p.nickname ?? "").toLowerCase().includes(q)
@@ -179,12 +201,15 @@ export default function PersonsSection() {
         </button>
       </div>
 
+      {saveError && <p className="text-sm text-red-500 mb-3">{saveError}</p>}
       <div className="mb-3">
         <input
           className={inputClass}
           placeholder="Search by name or nickname…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onBlur={(e) => commitSearch(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") commitSearch(search); }}
         />
       </div>
 
@@ -205,7 +230,7 @@ export default function PersonsSection() {
           </thead>
           <tbody>
             {filtered.map((person) => (
-              <tr key={person.id} className="border-b border-[var(--border)] hover:bg-[var(--surface-alt)] transition-colors">
+              <tr key={person.id} className="border-b border-[var(--border)] hover:bg-[var(--surface-alt)] transition-colors cursor-pointer" onClick={() => editingId !== person.id && startEdit(person)}>
                 <td className="py-2 pr-4 text-[var(--text-muted)] font-mono text-xs">{person.id}</td>
 
                 {editingId === person.id ? (
@@ -261,7 +286,7 @@ export default function PersonsSection() {
                   </>
                 )}
 
-                <td className="py-2">
+                <td className="py-2" onClick={(e) => e.stopPropagation()}>
                   <div className="flex flex-col gap-1 items-start">
                     {editingId === person.id ? (
                       <div className="flex gap-1">
