@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { db } from "@/lib/db";
 import { transports } from "@/lib/schema";
 import { and, eq, count, desc } from "drizzle-orm";

@@ -69,7 +69,7 @@ export const padelSets = sqliteTable("padel_sets", {
   gamesLost: integer("games_lost").notNull(),
   format: text("format"),
   venue: text("venue"),
-  courtNumber: integer("court_number"),
+  courtNumber: text("court_number"),
   videoUrl: text("video_url"),
   createdAt: integer("created_at")
     .notNull()

@@ -262,7 +262,7 @@ async function seedPadelMatches(
       gamesLost,
       format:      row["format"]?.trim() || null,
       venue:       row["venue"]?.trim() || null,
-      courtNumber: toInt(row["court_number"]),
+      courtNumber: row["court_number"]?.trim() || null,
     });
 
     inserted++;

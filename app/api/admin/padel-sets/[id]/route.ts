@@ -47,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (gamesLost !== undefined) fields.gamesLost = gamesLost !== "" ? Number(gamesLost) : null;
   if (format !== undefined) fields.format = format || null;
   if (venue !== undefined) fields.venue = venue || null;
-  if (courtNumber !== undefined) fields.courtNumber = courtNumber ? Number(courtNumber) : null;
+  if (courtNumber !== undefined) fields.courtNumber = courtNumber || null;
   if (videoUrl !== undefined) fields.videoUrl = videoUrl?.trim() || null;
 
   const [row] = await db

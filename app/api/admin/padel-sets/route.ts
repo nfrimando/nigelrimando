@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       gamesLost: Number(gamesLost),
       format: format || null,
       venue: venue || null,
-      courtNumber: courtNumber ? Number(courtNumber) : null,
+      courtNumber: courtNumber || null,
       videoUrl: videoUrl?.trim() || null,
     })
     .returning();

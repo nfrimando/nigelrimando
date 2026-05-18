@@ -63,6 +63,74 @@ const cancelClass =
 const inlineInputClass =
   "w-full px-2 py-1 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] text-xs focus:outline-none focus:ring-1 focus:ring-[var(--accent)]";
 
+function PersonCombobox({
+  value,
+  onChange,
+  persons,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  persons: Person[];
+  placeholder?: string;
+  className?: string;
+}) {
+  const personLabel = (p: Person) => p.nickname ?? p.name;
+  const [inputVal, setInputVal] = useState(() => {
+    const p = persons.find((p) => String(p.id) === value);
+    return p ? personLabel(p) : "";
+  });
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const p = persons.find((p) => String(p.id) === value);
+    setInputVal(p ? personLabel(p) : "");
+  }, [value, persons]);
+
+  const filtered = inputVal
+    ? persons.filter((p) =>
+        personLabel(p).toLowerCase().includes(inputVal.toLowerCase()) ||
+        p.name.toLowerCase().includes(inputVal.toLowerCase()),
+      )
+    : persons;
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        className={className ?? inputClass}
+        placeholder={placeholder ?? "Type to search…"}
+        value={inputVal}
+        onChange={(e) => {
+          setInputVal(e.target.value);
+          onChange("");
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-20 mt-1 w-full bg-[var(--surface)] border border-[var(--border)] rounded-[14px] shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map((p) => (
+            <li
+              key={p.id}
+              onMouseDown={() => {
+                onChange(String(p.id));
+                setInputVal(personLabel(p));
+                setOpen(false);
+              }}
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-[var(--surface-alt)] text-[var(--text)] first:rounded-t-[14px] last:rounded-b-[14px]"
+            >
+              {personLabel(p)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 type MatchForm = {
   date: string;
   teammateLeft: string;
@@ -136,8 +204,18 @@ export default function PadelSetsSection() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function personName(id: number) {
-    return persons.find((p) => p.id === id)?.name ?? String(id);
+  function personDisplay(id: number) {
+    const p = persons.find((p) => p.id === id);
+    const label = p?.nickname ?? p?.name ?? String(id);
+    if (p?.imageUrl) {
+      return (
+        <span className="flex items-center gap-1">
+          <img src={p.imageUrl} alt={label} className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
+          {label}
+        </span>
+      );
+    }
+    return <>{label}</>;
   }
 
   async function fetchRows(p: number, q: string) {
@@ -206,13 +284,19 @@ export default function PadelSetsSection() {
     setShowAddModal(true);
   }
 
-  function swapSides() {
+  function swapTeam1() {
     setMatchForm((f) => ({
       ...f,
-      teammateLeft: f.opponentLeft,
-      teammateRight: f.opponentRight,
-      opponentLeft: f.teammateLeft,
-      opponentRight: f.teammateRight,
+      teammateLeft: f.teammateRight,
+      teammateRight: f.teammateLeft,
+    }));
+  }
+
+  function swapTeam2() {
+    setMatchForm((f) => ({
+      ...f,
+      opponentLeft: f.opponentRight,
+      opponentRight: f.opponentLeft,
     }));
   }
 
@@ -235,9 +319,7 @@ export default function PadelSetsSection() {
           gamesLost: Number(setScore.gamesLost),
           venue: matchForm.venue || null,
           format: matchForm.format || null,
-          courtNumber: matchForm.courtNumber
-            ? Number(matchForm.courtNumber)
-            : null,
+          courtNumber: matchForm.courtNumber || null,
           videoUrl: setScore.videoUrl || null,
         }),
       });
@@ -274,7 +356,7 @@ export default function PadelSetsSection() {
       gamesLost: String(row.gamesLost),
       venue: row.venue ?? "",
       format: row.format ?? "",
-      courtNumber: row.courtNumber != null ? String(row.courtNumber) : "",
+      courtNumber: row.courtNumber ?? "",
       videoUrl: row.videoUrl ?? "",
     });
   }
@@ -317,38 +399,13 @@ export default function PadelSetsSection() {
     setRows((prev) => prev.filter((r) => r.id !== id));
   }
 
-  const personSelect = (
-    value: string,
-    onChange: (v: string) => void,
-    placeholder?: string,
-  ) => (
-    <select
-      className={inputClass}
+  const inlinePersonCombobox = (value: string, onChange: (v: string) => void) => (
+    <PersonCombobox
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">{placeholder ?? "Select person"}</option>
-      {persons.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-    </select>
-  );
-
-  const inlinePersonSelect = (value: string, onChange: (v: string) => void) => (
-    <select
+      onChange={onChange}
+      persons={persons}
       className={inlineInputClass}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">—</option>
-      {persons.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-    </select>
+    />
   );
 
   return (
@@ -385,6 +442,7 @@ export default function PadelSetsSection() {
                 <th className="pb-2 pr-3">Won</th>
                 <th className="pb-2 pr-3">Lost</th>
                 <th className="pb-2 pr-3">Venue</th>
+                <th className="pb-2 pr-3">Court</th>
                 <th className="pb-2 pr-3">Video</th>
                 <th className="pb-2"></th>
               </tr>
@@ -402,10 +460,7 @@ export default function PadelSetsSection() {
                         style={{ width: 50 }}
                         value={editForm.matchId}
                         onChange={(e) =>
-                          setEditForm((f) => ({
-                            ...f,
-                            matchId: e.target.value,
-                          }))
+                          setEditForm((f) => ({ ...f, matchId: e.target.value }))
                         }
                       />
                     </td>
@@ -415,10 +470,7 @@ export default function PadelSetsSection() {
                         style={{ width: 40 }}
                         value={editForm.setNumber}
                         onChange={(e) =>
-                          setEditForm((f) => ({
-                            ...f,
-                            setNumber: e.target.value,
-                          }))
+                          setEditForm((f) => ({ ...f, setNumber: e.target.value }))
                         }
                       />
                     </td>
@@ -432,23 +484,23 @@ export default function PadelSetsSection() {
                         }
                       />
                     </td>
-                    <td className="py-1 pr-2">
-                      {inlinePersonSelect(editForm.teammateLeft, (v) =>
+                    <td className="py-1 pr-2" style={{ minWidth: 120 }}>
+                      {inlinePersonCombobox(editForm.teammateLeft, (v) =>
                         setEditForm((f) => ({ ...f, teammateLeft: v })),
                       )}
                     </td>
-                    <td className="py-1 pr-2">
-                      {inlinePersonSelect(editForm.teammateRight, (v) =>
+                    <td className="py-1 pr-2" style={{ minWidth: 120 }}>
+                      {inlinePersonCombobox(editForm.teammateRight, (v) =>
                         setEditForm((f) => ({ ...f, teammateRight: v })),
                       )}
                     </td>
-                    <td className="py-1 pr-2">
-                      {inlinePersonSelect(editForm.opponentLeft, (v) =>
+                    <td className="py-1 pr-2" style={{ minWidth: 120 }}>
+                      {inlinePersonCombobox(editForm.opponentLeft, (v) =>
                         setEditForm((f) => ({ ...f, opponentLeft: v })),
                       )}
                     </td>
-                    <td className="py-1 pr-2">
-                      {inlinePersonSelect(editForm.opponentRight, (v) =>
+                    <td className="py-1 pr-2" style={{ minWidth: 120 }}>
+                      {inlinePersonCombobox(editForm.opponentRight, (v) =>
                         setEditForm((f) => ({ ...f, opponentRight: v })),
                       )}
                     </td>
@@ -458,10 +510,7 @@ export default function PadelSetsSection() {
                         style={{ width: 40 }}
                         value={editForm.gamesWon}
                         onChange={(e) =>
-                          setEditForm((f) => ({
-                            ...f,
-                            gamesWon: e.target.value,
-                          }))
+                          setEditForm((f) => ({ ...f, gamesWon: e.target.value }))
                         }
                       />
                     </td>
@@ -471,10 +520,7 @@ export default function PadelSetsSection() {
                         style={{ width: 40 }}
                         value={editForm.gamesLost}
                         onChange={(e) =>
-                          setEditForm((f) => ({
-                            ...f,
-                            gamesLost: e.target.value,
-                          }))
+                          setEditForm((f) => ({ ...f, gamesLost: e.target.value }))
                         }
                       />
                     </td>
@@ -484,6 +530,16 @@ export default function PadelSetsSection() {
                         value={editForm.venue}
                         onChange={(e) =>
                           setEditForm((f) => ({ ...f, venue: e.target.value }))
+                        }
+                      />
+                    </td>
+                    <td className="py-1 pr-2">
+                      <input
+                        className={inlineInputClass}
+                        style={{ width: 60 }}
+                        value={editForm.courtNumber}
+                        onChange={(e) =>
+                          setEditForm((f) => ({ ...f, courtNumber: e.target.value }))
                         }
                       />
                     </td>
@@ -524,22 +580,17 @@ export default function PadelSetsSection() {
                     </td>
                     <td className="py-2 pr-3">{row.setNumber}</td>
                     <td className="py-2 pr-3">{row.date}</td>
-                    <td className="py-2 pr-3">
-                      {personName(row.teammateLeft)}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {personName(row.teammateRight)}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {personName(row.opponentLeft)}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {personName(row.opponentRight)}
-                    </td>
+                    <td className="py-2 pr-3">{personDisplay(row.teammateLeft)}</td>
+                    <td className="py-2 pr-3">{personDisplay(row.teammateRight)}</td>
+                    <td className="py-2 pr-3">{personDisplay(row.opponentLeft)}</td>
+                    <td className="py-2 pr-3">{personDisplay(row.opponentRight)}</td>
                     <td className="py-2 pr-3 font-mono">{row.gamesWon}</td>
                     <td className="py-2 pr-3 font-mono">{row.gamesLost}</td>
                     <td className="py-2 pr-3 text-[var(--text-muted)]">
                       {row.venue ?? "—"}
+                    </td>
+                    <td className="py-2 pr-3 text-[var(--text-muted)]">
+                      {row.courtNumber ?? "—"}
                     </td>
                     <td className="py-2 pr-3">
                       {row.videoUrl ? (
@@ -683,17 +734,25 @@ export default function PadelSetsSection() {
                     }
                   />
                 </Field>
-                <Field label="Court #">
+                <Field label="Court">
+                  <datalist id="court-options">
+                    <option value="1" />
+                    <option value="2" />
+                    <option value="3" />
+                    <option value="4" />
+                    <option value="Terracotta" />
+                    <option value="Glass" />
+                    <option value="Center" />
+                    <option value="Indoor" />
+                    <option value="Outdoor" />
+                  </datalist>
                   <input
-                    type="number"
+                    list="court-options"
                     className={inputClass}
-                    placeholder="e.g. 3"
+                    placeholder="e.g. 3 or Terracotta"
                     value={matchForm.courtNumber}
                     onChange={(e) =>
-                      setMatchForm((f) => ({
-                        ...f,
-                        courtNumber: e.target.value,
-                      }))
+                      setMatchForm((f) => ({ ...f, courtNumber: e.target.value }))
                     }
                   />
                 </Field>
@@ -701,42 +760,71 @@ export default function PadelSetsSection() {
             )}
 
             <div className="col-span-2">
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-2">
                 <label className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
                   Players
                 </label>
-                {addPhase === "set" && (
+                <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={swapSides}
+                    onClick={swapTeam1}
                     className="text-xs text-[var(--accent)] hover:underline"
                   >
-                    ⇄ Swap sides
+                    ⇄ Swap T1
                   </button>
-                )}
+                  <button
+                    type="button"
+                    onClick={swapTeam2}
+                    className="text-xs text-[var(--accent)] hover:underline"
+                  >
+                    ⇄ Swap T2
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Field label="Teammate Left">
-                  {personSelect(matchForm.teammateLeft, (v) =>
-                    setMatchForm((f) => ({ ...f, teammateLeft: v })),
-                  )}
+                  <PersonCombobox
+                    value={matchForm.teammateLeft}
+                    onChange={(v) => setMatchForm((f) => ({ ...f, teammateLeft: v }))}
+                    persons={persons}
+                  />
                 </Field>
                 <Field label="Teammate Right">
-                  {personSelect(matchForm.teammateRight, (v) =>
-                    setMatchForm((f) => ({ ...f, teammateRight: v })),
-                  )}
+                  <PersonCombobox
+                    value={matchForm.teammateRight}
+                    onChange={(v) => setMatchForm((f) => ({ ...f, teammateRight: v }))}
+                    persons={persons}
+                  />
                 </Field>
                 <Field label="Opponent Left">
-                  {personSelect(matchForm.opponentLeft, (v) =>
-                    setMatchForm((f) => ({ ...f, opponentLeft: v })),
-                  )}
+                  <PersonCombobox
+                    value={matchForm.opponentLeft}
+                    onChange={(v) => setMatchForm((f) => ({ ...f, opponentLeft: v }))}
+                    persons={persons}
+                  />
                 </Field>
                 <Field label="Opponent Right">
-                  {personSelect(matchForm.opponentRight, (v) =>
-                    setMatchForm((f) => ({ ...f, opponentRight: v })),
-                  )}
+                  <PersonCombobox
+                    value={matchForm.opponentRight}
+                    onChange={(v) => setMatchForm((f) => ({ ...f, opponentRight: v }))}
+                    persons={persons}
+                  />
                 </Field>
               </div>
+            </div>
+
+            <div className="col-span-2">
+              <Field label="Video URL (optional)">
+                <input
+                  type="url"
+                  className={inputClass}
+                  placeholder="https://youtube.com/watch?v=..."
+                  value={setScore.videoUrl}
+                  onChange={(e) =>
+                    setSetScore((s) => ({ ...s, videoUrl: e.target.value }))
+                  }
+                />
+              </Field>
             </div>
 
             <Field label="Games Won">
@@ -763,19 +851,6 @@ export default function PadelSetsSection() {
                 }
               />
             </Field>
-            <div className="col-span-2">
-              <Field label="Video URL (optional)">
-                <input
-                  type="url"
-                  className={inputClass}
-                  placeholder="https://youtube.com/watch?v=..."
-                  value={setScore.videoUrl}
-                  onChange={(e) =>
-                    setSetScore((s) => ({ ...s, videoUrl: e.target.value }))
-                  }
-                />
-              </Field>
-            </div>
           </div>
 
           <div className="flex gap-2 justify-end">

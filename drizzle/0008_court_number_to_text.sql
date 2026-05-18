@@ -1,0 +1,1 @@
+ALTER TABLE `padel_sets` ALTER COLUMN "court_number" TO "court_number" text;

@@ -92,6 +92,9 @@ function TransportForm({
   error,
   submitLabel,
   onCancel,
+  idPrefix,
+  originSuggestions,
+  destinationSuggestions,
 }: {
   form: FormState;
   setForm: (f: FormState) => void;
@@ -100,6 +103,9 @@ function TransportForm({
   error: string;
   submitLabel: string;
   onCancel: () => void;
+  idPrefix: string;
+  originSuggestions: string[];
+  destinationSuggestions: string[];
 }) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -168,20 +174,30 @@ function TransportForm({
         <Field label="Origin (optional)">
           <input
             type="text"
+            list={`${idPrefix}-origins`}
             value={form.origin}
             onChange={(e) => setForm({ ...form, origin: e.target.value })}
             placeholder="e.g. Home"
             className={inputClass}
+            autoComplete="off"
           />
+          <datalist id={`${idPrefix}-origins`}>
+            {originSuggestions.map((s) => <option key={s} value={s} />)}
+          </datalist>
         </Field>
         <Field label="Destination (optional)">
           <input
             type="text"
+            list={`${idPrefix}-destinations`}
             value={form.destination}
             onChange={(e) => setForm({ ...form, destination: e.target.value })}
             placeholder="e.g. Office"
             className={inputClass}
+            autoComplete="off"
           />
+          <datalist id={`${idPrefix}-destinations`}>
+            {destinationSuggestions.map((s) => <option key={s} value={s} />)}
+          </datalist>
         </Field>
       </div>
       <Field label="Notes (optional)">
@@ -217,6 +233,9 @@ export default function TransportsSection() {
   const [rows, setRows] = useState<Transport[]>([]);
   const [fetching, setFetching] = useState(false);
   const [search, setSearch] = useState("");
+
+  const originSuggestions = [...new Set(rows.map((r) => r.origin).filter(Boolean) as string[])].sort();
+  const destinationSuggestions = [...new Set(rows.map((r) => r.destination).filter(Boolean) as string[])].sort();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState<FormState>(defaultForm);
@@ -427,6 +446,9 @@ export default function TransportsSection() {
             error={addError}
             submitLabel="Add entry"
             onCancel={() => setShowAddModal(false)}
+            idPrefix="add"
+            originSuggestions={originSuggestions}
+            destinationSuggestions={destinationSuggestions}
           />
         </Modal>
       )}
@@ -441,6 +463,9 @@ export default function TransportsSection() {
             error={editError}
             submitLabel="Save changes"
             onCancel={() => setEditingId(null)}
+            idPrefix="edit"
+            originSuggestions={originSuggestions}
+            destinationSuggestions={destinationSuggestions}
           />
         </Modal>
       )}
