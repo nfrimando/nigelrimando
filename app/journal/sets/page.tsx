@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { sets, exercises } from "@/lib/schema";
+import { sets, exercises, padelSets } from "@/lib/schema";
 import { desc, isNotNull, gte, and, count, asc } from "drizzle-orm";
 import DailyWorkoutSection from "./DailyWorkoutSection";
 import ExerciseExplorer from "./ExerciseExplorer";
@@ -78,14 +78,22 @@ export default async function JournalSetsPage() {
     String(calStartLocal.getDate()).padStart(2, "0"),
   ].join("-");
 
-  const activityRaw = await db
-    .select({ date: sets.date, setCount: count() })
-    .from(sets)
-    .where(and(isNotNull(sets.actual), gte(sets.date, calStartStr)))
-    .groupBy(sets.date);
+  const [activityRaw, padelDatesRaw] = await Promise.all([
+    db
+      .select({ date: sets.date, setCount: count() })
+      .from(sets)
+      .where(and(isNotNull(sets.actual), gte(sets.date, calStartStr)))
+      .groupBy(sets.date),
+    db
+      .select({ date: padelSets.date })
+      .from(padelSets)
+      .where(gte(padelSets.date, calStartStr))
+      .groupBy(padelSets.date),
+  ]);
   const activityMap = new Map(activityRaw.map((r) => [r.date, r.setCount]));
+  const padelDates = new Set(padelDatesRaw.map((r) => r.date));
 
-  const calDays: Array<{ date: string; count: number; isFuture: boolean }> = [];
+  const calDays: Array<{ date: string; count: number; hasPadel: boolean; isFuture: boolean }> = [];
   for (let i = 0; i < 28; i++) {
     const d = new Date(ty, tm - 1, td - daysFromMonday - 21 + i);
     const ds = [
@@ -96,6 +104,7 @@ export default async function JournalSetsPage() {
     calDays.push({
       date: ds,
       count: activityMap.get(ds) ?? 0,
+      hasPadel: padelDates.has(ds),
       isFuture: ds > today,
     });
   }
@@ -151,18 +160,29 @@ export default async function JournalSetsPage() {
 
         {/* 4-week calendar */}
         <section className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-y-2">
             <h2 className="font-heading font-bold text-sm text-[var(--text)]">
               Last 4 weeks
             </h2>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-[3px] bg-[var(--surface-alt)] border border-[var(--border)]" />
                 <span className="text-[11px] text-[var(--text-muted)]">Rest</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-[3px] bg-[var(--accent)]" />
-                <span className="text-[11px] text-[var(--text-muted)]">Trained</span>
+                <span className="text-[11px] text-[var(--text-muted)]">Gym</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-[3px] bg-[#5E8365]" />
+                <span className="text-[11px] text-[var(--text-muted)]">Padel</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-3 h-3 rounded-[3px]"
+                  style={{ background: "linear-gradient(135deg, var(--accent) 50%, #5E8365 50%)" }}
+                />
+                <span className="text-[11px] text-[var(--text-muted)]">Both</span>
               </div>
             </div>
           </div>
@@ -175,20 +195,49 @@ export default async function JournalSetsPage() {
                 {d}
               </div>
             ))}
-            {calDays.map(({ date, count: setCount, isFuture }) => (
-              <div
-                key={date}
-                title={setCount > 0 ? `${date} — ${setCount} sets` : date}
-                className={[
-                  "aspect-square rounded-[8px] transition-colors",
-                  isFuture
-                    ? "opacity-0 pointer-events-none"
-                    : setCount > 0
+            {calDays.map(({ date, count: setCount, hasPadel, isFuture }) => {
+              const hasGym = setCount > 0;
+              const hasBoth = hasGym && hasPadel;
+
+              const title = [
+                hasGym ? `${setCount} gym sets` : null,
+                hasPadel ? "padel" : null,
+              ].filter(Boolean).join(" · ");
+
+              const cellStyle = hasBoth
+                ? { background: "linear-gradient(135deg, var(--accent) 50%, #5E8365 50%)" }
+                : undefined;
+
+              const cellClass = [
+                "aspect-square rounded-[8px] transition-colors",
+                isFuture
+                  ? "opacity-0 pointer-events-none"
+                  : hasBoth
+                    ? ""
+                    : hasGym
                       ? "bg-[var(--accent)]"
-                      : "bg-[var(--surface-alt)] border border-[var(--border)]",
-                ].join(" ")}
-              />
-            ))}
+                      : hasPadel
+                        ? "bg-[#5E8365]"
+                        : "bg-[var(--surface-alt)] border border-[var(--border)]",
+              ].join(" ");
+
+              const cell = (
+                <div
+                  key={date}
+                  title={title || date}
+                  className={cellClass}
+                  style={cellStyle}
+                />
+              );
+
+              return hasPadel && !isFuture ? (
+                <a key={date} href="/journal/padel" className="contents">
+                  {cell}
+                </a>
+              ) : (
+                cell
+              );
+            })}
           </div>
         </section>
 

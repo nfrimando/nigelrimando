@@ -27,12 +27,19 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name } = body;
+  const { name, nickname, imageUrl } = body;
 
   if (!name?.trim()) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  const [row] = await db.insert(persons).values({ name: name.trim() }).returning();
+  const [row] = await db
+    .insert(persons)
+    .values({
+      name: name.trim(),
+      nickname: nickname?.trim() || null,
+      imageUrl: imageUrl?.trim() || null,
+    })
+    .returning();
   return NextResponse.json(row, { status: 201 });
 }

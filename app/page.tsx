@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Nav from "@/components/Nav";
 import { db } from "@/lib/db";
-import { sets } from "@/lib/schema";
+import { sets, padelSets } from "@/lib/schema";
 import { count, sql } from "drizzle-orm";
+import { Dumbbell } from "lucide-react";
 
 // ── Components ────────────────────────────────────────────────────────────────
 
@@ -41,12 +42,21 @@ function formatDate(dateStr: string | null): string {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function Home() {
-  const [gymStats] = await db
-    .select({
-      totalSets: count(),
-      latestDate: sql<string | null>`MAX(${sets.date})`,
-    })
-    .from(sets);
+  const [[gymStats], [padelStats]] = await Promise.all([
+    db
+      .select({
+        totalSets: count(),
+        latestDate: sql<string | null>`MAX(${sets.date})`,
+      })
+      .from(sets),
+    db
+      .select({
+        totalSets: count(),
+        latestDate: sql<string | null>`MAX(${padelSets.date})`,
+        totalWins: sql<number>`SUM(CASE WHEN ${padelSets.gamesWon} > ${padelSets.gamesLost} THEN 1 ELSE 0 END)`,
+      })
+      .from(padelSets),
+  ]);
 
   return (
     <>
@@ -112,6 +122,7 @@ export default async function Home() {
                   src="/assets/gabe.jpeg"
                   alt="Nigel Rimando"
                   fill
+                  sizes="(max-width: 640px) 224px, (max-width: 1024px) 256px, 288px"
                   className="object-cover"
                   priority
                 />
@@ -130,42 +141,97 @@ export default async function Home() {
               What the numbers say
             </h2>
             <p className="text-muted text-sm">
-              I log my workouts and track personal data over time. Live data,
-              updated as I go.
+              I track what I do — sports, training, habits. Live data, updated
+              as I go.
             </p>
           </div>
 
-          {/* Exercise Log card */}
-          <div className="rounded-[20px] bg-surface border border-border p-7 max-w-sm">
-            <p className="text-xs font-mono text-muted uppercase tracking-widest mb-4">
-              Exercise Log
-            </p>
-            <p className="text-lg font-bold font-heading text-text mb-1">
-              Gym sets
-            </p>
-            <p className="text-sm text-muted mb-6">
-              Strength training, logged set by set.
-            </p>
-            <div className="flex gap-8 mb-7">
-              <div>
-                <p className="text-2xl font-bold font-heading text-text leading-none">
-                  {gymStats?.totalSets.toLocaleString() ?? "—"}
+          <div className="flex flex-col sm:flex-row gap-5">
+            {/* Exercise Log card */}
+            <div className="rounded-[20px] bg-surface border border-border p-7 flex-1 max-w-sm">
+              <p className="text-xs font-mono text-muted uppercase tracking-widest mb-4">
+                Exercise Log
+              </p>
+              <div className="flex items-center gap-2 mb-1">
+                <Dumbbell size={18} className="text-accent shrink-0" />
+                <p className="text-lg font-bold font-heading text-text">
+                  Gym sets
                 </p>
-                <p className="text-xs text-muted mt-1">sets recorded</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold font-heading text-text leading-none">
-                  {formatDate(gymStats?.latestDate ?? null)}
-                </p>
-                <p className="text-xs text-muted mt-1">last gym day</p>
+              <p className="text-sm text-muted mb-6">
+                Strength training, logged set by set.
+              </p>
+              <div className="flex gap-8 mb-7">
+                <div>
+                  <p className="text-2xl font-bold font-heading text-text leading-none">
+                    {gymStats?.totalSets.toLocaleString() ?? "—"}
+                  </p>
+                  <p className="text-xs text-muted mt-1">sets recorded</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-heading text-text leading-none">
+                    {formatDate(gymStats?.latestDate ?? null)}
+                  </p>
+                  <p className="text-xs text-muted mt-1">last gym day</p>
+                </div>
               </div>
+              <a
+                href="/journal/sets"
+                className="inline-block px-4 py-2 rounded-[14px] bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors duration-[180ms]"
+              >
+                View log →
+              </a>
             </div>
-            <a
-              href="/journal/sets"
-              className="inline-block px-4 py-2 rounded-[14px] bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors duration-[180ms]"
-            >
-              View log →
-            </a>
+
+            {/* Padel card */}
+            <div className="rounded-[20px] bg-surface border border-border p-7 flex-1 max-w-sm">
+              <p className="text-xs font-mono text-muted uppercase tracking-widest mb-4">
+                Padel
+              </p>
+              <div className="flex items-center gap-2 mb-1">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-accent shrink-0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  {/* Padel racket head (rounded rectangle) */}
+                  <rect x="5" y="2" width="14" height="14" rx="4" ry="4" />
+                  {/* Holes in the face */}
+                  <circle cx="9" cy="7" r="1" fill="currentColor" stroke="none" />
+                  <circle cx="12" cy="7" r="1" fill="currentColor" stroke="none" />
+                  <circle cx="15" cy="7" r="1" fill="currentColor" stroke="none" />
+                  <circle cx="9" cy="10" r="1" fill="currentColor" stroke="none" />
+                  <circle cx="12" cy="10" r="1" fill="currentColor" stroke="none" />
+                  <circle cx="15" cy="10" r="1" fill="currentColor" stroke="none" />
+                  {/* Handle */}
+                  <line x1="12" y1="16" x2="12" y2="22" strokeWidth="2.5" />
+                </svg>
+                <p className="text-lg font-bold font-heading text-text">
+                  Match tracker
+                </p>
+              </div>
+              <p className="text-sm text-muted mb-6">
+                Every match, every set, tracked and analyzed.
+              </p>
+              <div className="flex gap-8 mb-7">
+                <div>
+                  <p className="text-2xl font-bold font-heading text-text leading-none">
+                    {padelStats?.totalSets > 0
+                      ? `${Math.round((Number(padelStats.totalWins) / padelStats.totalSets) * 100)}%`
+                      : "—"}
+                  </p>
+                  <p className="text-xs text-muted mt-1">win rate</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-heading text-text leading-none">
+                    {formatDate(padelStats?.latestDate ?? null)}
+                  </p>
+                  <p className="text-xs text-muted mt-1">last match</p>
+                </div>
+              </div>
+              <a
+                href="/journal/padel"
+                className="inline-block px-4 py-2 rounded-[14px] bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors duration-[180ms]"
+              >
+                View log →
+              </a>
+            </div>
           </div>
         </section>
 

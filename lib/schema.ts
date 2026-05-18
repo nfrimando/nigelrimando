@@ -44,6 +44,8 @@ export type NewSet = typeof sets.$inferInsert;
 export const persons = sqliteTable("persons", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
+  nickname: text("nickname"),
+  imageUrl: text("image_url"),
 });
 
 export const padelSets = sqliteTable("padel_sets", {

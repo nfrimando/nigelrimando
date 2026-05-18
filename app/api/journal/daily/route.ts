@@ -20,15 +20,15 @@ export async function GET(req: NextRequest) {
     .where(and(eq(sets.date, date), isNotNull(sets.actual)))
     .orderBy(asc(sets.date), asc(sets.id));
 
-  // Group by exercise
-  const grouped: Record<number, { name: string; sets: { actual: number | null; value: number | null; measure: string | null }[] }> = {};
+  // Group by exercise, preserving the order rows arrived (sorted by sets.date, sets.id)
+  const grouped = new Map<number, { name: string; sets: { actual: number | null; value: number | null; measure: string | null }[] }>();
   for (const row of rows) {
-    if (!grouped[row.exerciseId]) {
-      grouped[row.exerciseId] = { name: row.name, sets: [] };
+    if (!grouped.has(row.exerciseId)) {
+      grouped.set(row.exerciseId, { name: row.name, sets: [] });
     }
-    grouped[row.exerciseId].sets.push({ actual: row.actual, value: row.value, measure: row.measure });
+    grouped.get(row.exerciseId)!.sets.push({ actual: row.actual, value: row.value, measure: row.measure });
   }
 
-  const data = Object.entries(grouped).map(([id, g]) => ({ exerciseId: Number(id), ...g }));
+  const data = Array.from(grouped.entries()).map(([id, g]) => ({ exerciseId: id, ...g }));
   return NextResponse.json(data);
 }
