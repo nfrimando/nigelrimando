@@ -17,10 +17,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [cats, subs, shops] = await Promise.all([
+  const [cats, subs, shops, items] = await Promise.all([
     db.selectDistinct({ v: expenses.category }).from(expenses).orderBy(asc(expenses.category)),
     db.selectDistinct({ v: expenses.subcategory }).from(expenses).where(isNotNull(expenses.subcategory)).orderBy(asc(expenses.subcategory)),
     db.selectDistinct({ v: expenses.shop }).from(expenses).where(isNotNull(expenses.shop)).orderBy(asc(expenses.shop)),
+    db.selectDistinct({ v: expenses.item }).from(expenses).orderBy(asc(expenses.item)),
   ]);
 
   return NextResponse.json(
@@ -28,6 +29,7 @@ export async function GET() {
       categories: cats.map((r) => r.v).filter(Boolean),
       subcategories: subs.map((r) => r.v).filter(Boolean),
       shops: shops.map((r) => r.v).filter(Boolean),
+      items: items.map((r) => r.v).filter(Boolean),
     },
     { headers: { "Cache-Control": "private, max-age=60" } },
   );

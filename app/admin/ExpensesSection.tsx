@@ -44,6 +44,77 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+function ComboBox({
+  value,
+  onChange,
+  options,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder?: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [cursor, setCursor] = useState(0);
+
+  const filtered = value
+    ? options.filter((o) => o.toLowerCase().includes(value.toLowerCase()))
+    : options;
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setOpen(true);
+      setCursor((c) => Math.min(c + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setCursor((c) => Math.max(c - 1, 0));
+    } else if (e.key === "Enter" && open && filtered[cursor] !== undefined) {
+      e.preventDefault();
+      onChange(filtered[cursor]);
+      setOpen(false);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={value}
+        autoComplete="off"
+        placeholder={placeholder}
+        className={className}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); setCursor(0); }}
+        onFocus={() => { setOpen(true); setCursor(0); }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={handleKeyDown}
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-20 mt-1 w-full bg-[var(--surface)] border border-[var(--border)] rounded-[14px] shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map((opt, i) => (
+            <li
+              key={opt}
+              onMouseDown={() => { onChange(opt); setOpen(false); }}
+              className={`px-3 py-2 text-sm cursor-pointer first:rounded-t-[14px] last:rounded-b-[14px] ${
+                i === cursor
+                  ? "bg-[var(--surface-alt)] text-[var(--text)]"
+                  : "text-[var(--text-muted)] hover:bg-[var(--surface-alt)] hover:text-[var(--text)]"
+              }`}
+            >
+              {opt}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 const inputClass =
   "w-full px-3 py-2 rounded-[14px] border border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
 const submitClass =
@@ -71,9 +142,9 @@ function ExpenseForm({
   error,
   submitLabel,
   onCancel,
-  idPrefix,
   categorySuggestions,
   subcategorySuggestions,
+  itemSuggestions,
   shopSuggestions,
 }: {
   form: FormState;
@@ -83,9 +154,9 @@ function ExpenseForm({
   error: string;
   submitLabel: string;
   onCancel: () => void;
-  idPrefix: string;
   categorySuggestions: string[];
   subcategorySuggestions: string[];
+  itemSuggestions: string[];
   shopSuggestions: string[];
 }) {
   return (
@@ -113,57 +184,40 @@ function ExpenseForm({
           />
         </Field>
         <Field label="Category">
-          <input
-            type="text"
-            list={`${idPrefix}-categories`}
+          <ComboBox
             value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            onChange={(v) => setForm({ ...form, category: v })}
+            options={categorySuggestions}
             placeholder="e.g. Food"
-            required
             className={inputClass}
-            autoComplete="off"
           />
-          <datalist id={`${idPrefix}-categories`}>
-            {categorySuggestions.map((s) => <option key={s} value={s} />)}
-          </datalist>
         </Field>
         <Field label="Subcategory (optional)">
-          <input
-            type="text"
-            list={`${idPrefix}-subcategories`}
+          <ComboBox
             value={form.subcategory}
-            onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+            onChange={(v) => setForm({ ...form, subcategory: v })}
+            options={subcategorySuggestions}
             placeholder="e.g. Groceries"
             className={inputClass}
-            autoComplete="off"
           />
-          <datalist id={`${idPrefix}-subcategories`}>
-            {subcategorySuggestions.map((s) => <option key={s} value={s} />)}
-          </datalist>
         </Field>
         <Field label="Item">
-          <input
-            type="text"
+          <ComboBox
             value={form.item}
-            onChange={(e) => setForm({ ...form, item: e.target.value })}
+            onChange={(v) => setForm({ ...form, item: v })}
+            options={itemSuggestions}
             placeholder="e.g. Chicken rice"
-            required
             className={inputClass}
           />
         </Field>
         <Field label="Shop (optional)">
-          <input
-            type="text"
-            list={`${idPrefix}-shops`}
+          <ComboBox
             value={form.shop}
-            onChange={(e) => setForm({ ...form, shop: e.target.value })}
+            onChange={(v) => setForm({ ...form, shop: v })}
+            options={shopSuggestions}
             placeholder="e.g. 7-Eleven"
             className={inputClass}
-            autoComplete="off"
           />
-          <datalist id={`${idPrefix}-shops`}>
-            {shopSuggestions.map((s) => <option key={s} value={s} />)}
-          </datalist>
         </Field>
       </div>
       <Field label="Notes (optional)">
@@ -196,6 +250,7 @@ export default function ExpensesSection() {
 
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
   const [subcategorySuggestions, setSubcategorySuggestions] = useState<string[]>([]);
+  const [itemSuggestions, setItemSuggestions] = useState<string[]>([]);
   const [shopSuggestions, setShopSuggestions] = useState<string[]>([]);
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -232,6 +287,7 @@ export default function ExpensesSection() {
       const json = await res.json();
       setCategorySuggestions(json.categories ?? []);
       setSubcategorySuggestions(json.subcategories ?? []);
+      setItemSuggestions(json.items ?? []);
       setShopSuggestions(json.shops ?? []);
     }
   }
@@ -436,9 +492,9 @@ export default function ExpensesSection() {
             error={addError}
             submitLabel="Add entry"
             onCancel={() => setShowAddModal(false)}
-            idPrefix="add"
             categorySuggestions={categorySuggestions}
             subcategorySuggestions={subcategorySuggestions}
+            itemSuggestions={itemSuggestions}
             shopSuggestions={shopSuggestions}
           />
         </Modal>
@@ -454,9 +510,9 @@ export default function ExpensesSection() {
             error={editError}
             submitLabel="Save changes"
             onCancel={() => setEditingId(null)}
-            idPrefix="edit"
             categorySuggestions={categorySuggestions}
             subcategorySuggestions={subcategorySuggestions}
+            itemSuggestions={itemSuggestions}
             shopSuggestions={shopSuggestions}
           />
         </Modal>

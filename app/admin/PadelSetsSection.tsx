@@ -60,8 +60,6 @@ const submitClass =
   "px-4 py-2 rounded-[14px] bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors";
 const cancelClass =
   "px-4 py-2 rounded-[14px] bg-[var(--surface-alt)] text-[var(--text-muted)] text-sm font-medium hover:text-[var(--text)] transition-colors";
-const inlineInputClass =
-  "w-full px-2 py-1 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] text-xs focus:outline-none focus:ring-1 focus:ring-[var(--accent)]";
 
 function PersonCombobox({
   value,
@@ -184,6 +182,7 @@ export default function PadelSetsSection() {
   const [addError, setAddError] = useState("");
   const [addLoading, setAddLoading] = useState(false);
 
+  const [showEditModal, setShowEditModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
     date: "",
@@ -361,6 +360,7 @@ export default function PadelSetsSection() {
       courtNumber: row.courtNumber ?? "",
       videoUrl: row.videoUrl ?? "",
     });
+    setShowEditModal(true);
   }
 
   async function saveEdit(id: number) {
@@ -383,6 +383,7 @@ export default function PadelSetsSection() {
     };
     setRows((prev) => prev.map((r) => (r.id === id ? optimistic : r)));
     setEditingId(null);
+    setShowEditModal(false);
     setEditLoading(true);
     try {
       const res = await fetch(`/api/admin/padel-sets/${id}`, {
@@ -409,7 +410,6 @@ export default function PadelSetsSection() {
         setRows((prev) => prev.map((r) => (r.id === id ? updated : r)));
       } else {
         setRows((prev) => prev.map((r) => (r.id === id ? originalRow : r)));
-        setEditingId(id);
         setSaveError("Failed to save. Changes reverted.");
         setTimeout(() => setSaveError(""), 3000);
       }
@@ -423,15 +423,6 @@ export default function PadelSetsSection() {
     await fetch(`/api/admin/padel-sets/${id}`, { method: "DELETE" });
     setRows((prev) => prev.filter((r) => r.id !== id));
   }
-
-  const inlinePersonCombobox = (value: string, onChange: (v: string) => void) => (
-    <PersonCombobox
-      value={value}
-      onChange={onChange}
-      persons={persons}
-      className={inlineInputClass}
-    />
-  );
 
   return (
     <div>
@@ -477,185 +468,62 @@ export default function PadelSetsSection() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) =>
-                editingId === row.id ? (
-                  <tr
-                    key={row.id}
-                    className="border-b border-[var(--border)] bg-[var(--surface-alt)]"
-                  >
-                    <td className="py-1 pr-2">
-                      <input
-                        className={inlineInputClass}
-                        style={{ width: 50 }}
-                        value={editForm.matchId}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, matchId: e.target.value }))
-                        }
-                      />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input
-                        className={inlineInputClass}
-                        style={{ width: 40 }}
-                        value={editForm.setNumber}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, setNumber: e.target.value }))
-                        }
-                      />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input
-                        type="date"
-                        className={inlineInputClass}
-                        value={editForm.date}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, date: e.target.value }))
-                        }
-                      />
-                    </td>
-                    <td className="py-1 pr-2" style={{ minWidth: 120 }}>
-                      {inlinePersonCombobox(editForm.teammateLeft, (v) =>
-                        setEditForm((f) => ({ ...f, teammateLeft: v })),
-                      )}
-                    </td>
-                    <td className="py-1 pr-2" style={{ minWidth: 120 }}>
-                      {inlinePersonCombobox(editForm.teammateRight, (v) =>
-                        setEditForm((f) => ({ ...f, teammateRight: v })),
-                      )}
-                    </td>
-                    <td className="py-1 pr-2" style={{ minWidth: 120 }}>
-                      {inlinePersonCombobox(editForm.opponentLeft, (v) =>
-                        setEditForm((f) => ({ ...f, opponentLeft: v })),
-                      )}
-                    </td>
-                    <td className="py-1 pr-2" style={{ minWidth: 120 }}>
-                      {inlinePersonCombobox(editForm.opponentRight, (v) =>
-                        setEditForm((f) => ({ ...f, opponentRight: v })),
-                      )}
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input
-                        className={inlineInputClass}
-                        style={{ width: 40 }}
-                        value={editForm.gamesWon}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, gamesWon: e.target.value }))
-                        }
-                      />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input
-                        className={inlineInputClass}
-                        style={{ width: 40 }}
-                        value={editForm.gamesLost}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, gamesLost: e.target.value }))
-                        }
-                      />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input
-                        className={inlineInputClass}
-                        value={editForm.venue}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, venue: e.target.value }))
-                        }
-                      />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input
-                        className={inlineInputClass}
-                        style={{ width: 60 }}
-                        value={editForm.courtNumber}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, courtNumber: e.target.value }))
-                        }
-                      />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input
-                        className={inlineInputClass}
-                        style={{ width: 120 }}
-                        placeholder="https://..."
-                        value={editForm.videoUrl}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, videoUrl: e.target.value }))
-                        }
-                      />
-                    </td>
-                    <td className="py-1 flex gap-1">
-                      <button
-                        onClick={() => saveEdit(row.id)}
-                        disabled={editLoading}
-                        className={submitClass + " text-xs py-1 px-2"}
+              {rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="border-b border-[var(--border)] hover:bg-[var(--surface-alt)] transition-colors cursor-pointer"
+                  onClick={() => startEdit(row)}
+                >
+                  <td className="py-2 pr-3 text-[var(--text-muted)]">
+                    {row.matchId}
+                  </td>
+                  <td className="py-2 pr-3">{row.setNumber}</td>
+                  <td className="py-2 pr-3">{row.date}</td>
+                  <td className="py-2 pr-3">{personDisplay(row.teammateLeft)}</td>
+                  <td className="py-2 pr-3">{personDisplay(row.teammateRight)}</td>
+                  <td className="py-2 pr-3">{personDisplay(row.opponentLeft)}</td>
+                  <td className="py-2 pr-3">{personDisplay(row.opponentRight)}</td>
+                  <td className="py-2 pr-3 font-mono">{row.gamesWon}</td>
+                  <td className="py-2 pr-3 font-mono">{row.gamesLost}</td>
+                  <td className="py-2 pr-3 text-[var(--text-muted)]">
+                    {row.venue ?? "—"}
+                  </td>
+                  <td className="py-2 pr-3 text-[var(--text-muted)]">
+                    {row.courtNumber ?? "—"}
+                  </td>
+                  <td className="py-2 pr-3" onClick={(e) => e.stopPropagation()}>
+                    {row.videoUrl ? (
+                      <a
+                        href={row.videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#FF0000] hover:opacity-70 transition-opacity"
+                        title="Watch video"
                       >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingId(null)}
-                        className={cancelClass + " text-xs py-1 px-2"}
-                      >
-                        Cancel
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  <tr
-                    key={row.id}
-                    className="border-b border-[var(--border)] hover:bg-[var(--surface-alt)] transition-colors cursor-pointer"
-                    onClick={() => startEdit(row)}
-                  >
-                    <td className="py-2 pr-3 text-[var(--text-muted)]">
-                      {row.matchId}
-                    </td>
-                    <td className="py-2 pr-3">{row.setNumber}</td>
-                    <td className="py-2 pr-3">{row.date}</td>
-                    <td className="py-2 pr-3">{personDisplay(row.teammateLeft)}</td>
-                    <td className="py-2 pr-3">{personDisplay(row.teammateRight)}</td>
-                    <td className="py-2 pr-3">{personDisplay(row.opponentLeft)}</td>
-                    <td className="py-2 pr-3">{personDisplay(row.opponentRight)}</td>
-                    <td className="py-2 pr-3 font-mono">{row.gamesWon}</td>
-                    <td className="py-2 pr-3 font-mono">{row.gamesLost}</td>
-                    <td className="py-2 pr-3 text-[var(--text-muted)]">
-                      {row.venue ?? "—"}
-                    </td>
-                    <td className="py-2 pr-3 text-[var(--text-muted)]">
-                      {row.courtNumber ?? "—"}
-                    </td>
-                    <td className="py-2 pr-3" onClick={(e) => e.stopPropagation()}>
-                      {row.videoUrl ? (
-                        <a
-                          href={row.videoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#FF0000] hover:opacity-70 transition-opacity"
-                          title="Watch video"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                          </svg>
-                        </a>
-                      ) : (
-                        <span className="text-[var(--text-muted)]">—</span>
-                      )}
-                    </td>
-                    <td className="py-2 flex gap-1" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => startEdit(row)}
-                        className="text-xs text-[var(--accent)] hover:underline"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(row.id)}
-                        className="text-xs text-[var(--warm)] hover:underline"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ),
-              )}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                        </svg>
+                      </a>
+                    ) : (
+                      <span className="text-[var(--text-muted)]">—</span>
+                    )}
+                  </td>
+                  <td className="py-2 flex gap-1" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => startEdit(row)}
+                      className="text-xs text-[var(--accent)] hover:underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(row.id)}
+                      className="text-xs text-[var(--warm)] hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -681,6 +549,157 @@ export default function PadelSetsSection() {
             Next →
           </button>
         </div>
+      )}
+
+      {showEditModal && editingId !== null && (
+        <Modal title="Edit Set" onClose={() => setShowEditModal(false)}>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <Field label="Date">
+              <input
+                type="date"
+                className={inputClass}
+                value={editForm.date}
+                onChange={(e) => setEditForm((f) => ({ ...f, date: e.target.value }))}
+              />
+            </Field>
+            <Field label="Match ID">
+              <input
+                className={inputClass}
+                value={editForm.matchId}
+                onChange={(e) => setEditForm((f) => ({ ...f, matchId: e.target.value }))}
+              />
+            </Field>
+            <Field label="Set Number">
+              <input
+                className={inputClass}
+                value={editForm.setNumber}
+                onChange={(e) => setEditForm((f) => ({ ...f, setNumber: e.target.value }))}
+              />
+            </Field>
+            <Field label="Games Won">
+              <input
+                className={inputClass}
+                value={editForm.gamesWon}
+                onChange={(e) => setEditForm((f) => ({ ...f, gamesWon: e.target.value }))}
+              />
+            </Field>
+            <Field label="Games Lost">
+              <input
+                className={inputClass}
+                value={editForm.gamesLost}
+                onChange={(e) => setEditForm((f) => ({ ...f, gamesLost: e.target.value }))}
+              />
+            </Field>
+            <Field label="Venue">
+              <datalist id="edit-venue-options">
+                <option value="Alabang Country Club" />
+                <option value="Amare Padel Umalas" />
+                <option value="Bali Padel Academy" />
+                <option value="Bohol Padel Club" />
+                <option value="Canggu Padel" />
+                <option value="Island Padel" />
+                <option value="Manila Polo Club" />
+                <option value="Monster Padel" />
+                <option value="MPC Arcovia" />
+                <option value="MPC BGC" />
+                <option value="Nordic House La Union" />
+                <option value="Oca Padel Social" />
+                <option value="Padel 300" />
+                <option value="Palm Beach" />
+                <option value="Play Padel Mandaluyong" />
+                <option value="Play Padel Mckinley" />
+                <option value="Play Padel Taguig" />
+                <option value="Pro Padel Bali" />
+                <option value="Unilab" />
+              </datalist>
+              <input
+                list="edit-venue-options"
+                className={inputClass}
+                value={editForm.venue}
+                onChange={(e) => setEditForm((f) => ({ ...f, venue: e.target.value }))}
+              />
+            </Field>
+            <Field label="Court">
+              <datalist id="edit-court-options">
+                <option value="1" />
+                <option value="2" />
+                <option value="3" />
+                <option value="4" />
+                <option value="Terracotta" />
+                <option value="Glass" />
+                <option value="Center" />
+                <option value="Indoor" />
+                <option value="Outdoor" />
+              </datalist>
+              <input
+                list="edit-court-options"
+                className={inputClass}
+                value={editForm.courtNumber}
+                onChange={(e) => setEditForm((f) => ({ ...f, courtNumber: e.target.value }))}
+              />
+            </Field>
+            <div className="col-span-2">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
+                  Players
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Teammate Left">
+                  <PersonCombobox
+                    value={editForm.teammateLeft}
+                    onChange={(v) => setEditForm((f) => ({ ...f, teammateLeft: v }))}
+                    persons={persons}
+                  />
+                </Field>
+                <Field label="Teammate Right">
+                  <PersonCombobox
+                    value={editForm.teammateRight}
+                    onChange={(v) => setEditForm((f) => ({ ...f, teammateRight: v }))}
+                    persons={persons}
+                  />
+                </Field>
+                <Field label="Opponent Left">
+                  <PersonCombobox
+                    value={editForm.opponentLeft}
+                    onChange={(v) => setEditForm((f) => ({ ...f, opponentLeft: v }))}
+                    persons={persons}
+                  />
+                </Field>
+                <Field label="Opponent Right">
+                  <PersonCombobox
+                    value={editForm.opponentRight}
+                    onChange={(v) => setEditForm((f) => ({ ...f, opponentRight: v }))}
+                    persons={persons}
+                  />
+                </Field>
+              </div>
+            </div>
+            <div className="col-span-2">
+              <Field label="Video URL (optional)">
+                <input
+                  type="url"
+                  className={inputClass}
+                  placeholder="https://youtube.com/watch?v=..."
+                  value={editForm.videoUrl}
+                  onChange={(e) => setEditForm((f) => ({ ...f, videoUrl: e.target.value }))}
+                />
+              </Field>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setShowEditModal(false)} className={cancelClass}>
+              Cancel
+            </button>
+            <button
+              onClick={() => saveEdit(editingId)}
+              disabled={editLoading}
+              className={submitClass}
+            >
+              {editLoading ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </Modal>
       )}
 
       {showAddModal && (

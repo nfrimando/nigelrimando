@@ -43,7 +43,8 @@ export default function SetsSection() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Inline edit state
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<typeof defaultForm>>({});
   const [saveError, setSaveError] = useState("");
@@ -66,7 +67,6 @@ export default function SetsSection() {
   const [rowCopyTarget, setRowCopyTarget] = useState<SetRow | null>(null);
   const [rowCopyDate, setRowCopyDate] = useState(today);
   const [rowCopyLoading, setRowCopyLoading] = useState(false);
-
 
   // Log Set modal
   const [showLogSetModal, setShowLogSetModal] = useState(false);
@@ -175,6 +175,7 @@ export default function SetsSection() {
       value: s.value != null ? String(s.value) : "",
       notes: s.notes ?? "",
     });
+    setShowEditModal(true);
   }
 
   async function saveEdit(id: number) {
@@ -193,6 +194,7 @@ export default function SetsSection() {
     };
     setSets((prev) => prev.map((s) => (s.id === id ? optimistic : s)));
     setEditingId(null);
+    setShowEditModal(false);
     const res = await fetch(`/api/admin/sets/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -203,7 +205,6 @@ export default function SetsSection() {
       setSets((prev) => prev.map((s) => (s.id === id ? updated : s)));
     } else {
       setSets((prev) => prev.map((s) => (s.id === id ? originalRow : s)));
-      setEditingId(id);
       setSaveError("Failed to save. Changes reverted.");
       setTimeout(() => setSaveError(""), 3000);
     }
@@ -442,48 +443,9 @@ export default function SetsSection() {
               <tbody>
                 {sets.map((s) => {
                   const isPlanned = s.actual == null;
-                  const isEditing = editingId === s.id;
                   const rowBase = isPlanned
                     ? "border-b border-[var(--border)] last:border-0 bg-[var(--surface-alt)] italic"
                     : "border-b border-[var(--border)] last:border-0";
-
-                  if (isEditing) {
-                    return (
-                      <tr key={s.id} className={rowBase} onKeyDown={(e) => { if (e.key === "Enter") saveEdit(s.id); if (e.key === "Escape") setEditingId(null); }}>
-                        <td className="py-2 pr-3">
-                          <input type="checkbox" checked={selectedIds.has(s.id)} onChange={() => toggleSelect(s.id)} className="accent-[var(--accent)]" />
-                        </td>
-                        <td className="py-1 pr-2"><input type="date" value={editForm.date ?? ""} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className={inlineInputClass} /></td>
-                        <td className="py-1 pr-2">
-                          <SearchableSelect
-                            value={editForm.exerciseId ?? ""}
-                            onChange={(val) => setEditForm({ ...editForm, exerciseId: val })}
-                            options={exercises}
-                            className={inlineInputClass}
-                          />
-                        </td>
-                        <td className="py-1 pr-2"><input type="text" value={editForm.block ?? ""} onChange={(e) => setEditForm({ ...editForm, block: e.target.value })} className={inlineInputClass} /></td>
-                        <td className="py-1 pr-2"><input type="number" value={editForm.week ?? ""} onChange={(e) => setEditForm({ ...editForm, week: e.target.value })} className={`${inlineInputClass} w-14`} /></td>
-                        <td className="py-1 pr-2">
-                          <div className="flex gap-1">
-                            <input type="number" value={editForm.value ?? ""} onChange={(e) => setEditForm({ ...editForm, value: e.target.value })} step="any" className={`${inlineInputClass} w-16`} />
-                            <select value={editForm.measure ?? "kg"} onChange={(e) => setEditForm({ ...editForm, measure: e.target.value })} className={inlineInputClass}>
-                              {MEASURES.map((m) => <option key={m} value={m}>{m}</option>)}
-                            </select>
-                          </div>
-                        </td>
-                        <td className="py-1 pr-2"><input type="number" value={editForm.planned ?? ""} onChange={(e) => setEditForm({ ...editForm, planned: e.target.value })} step="any" className={`${inlineInputClass} w-16`} /></td>
-                        <td className="py-1 pr-2"><input type="number" value={editForm.actual ?? ""} onChange={(e) => setEditForm({ ...editForm, actual: e.target.value })} step="any" className={`${inlineInputClass} w-16`} /></td>
-                        <td className="py-1 pr-2"><input type="text" value={editForm.notes ?? ""} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} className={inlineInputClass} /></td>
-                        <td className="py-1">
-                          <div className="flex gap-2">
-                            <button onClick={() => saveEdit(s.id)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] font-medium">Save</button>
-                            <button onClick={() => setEditingId(null)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)]">Cancel</button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  }
 
                   return (
                     <tr key={s.id} className={`${rowBase} cursor-pointer`} onClick={() => startEdit(s)}>
@@ -538,6 +500,54 @@ export default function SetsSection() {
           </div>
         )}
       </section>
+
+      {/* Edit Set Modal */}
+      {showEditModal && editingId !== null && (
+        <Modal title="Edit set" onClose={() => setShowEditModal(false)}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+            <Field label="Date">
+              <input type="date" value={editForm.date ?? ""} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className={inputClass} />
+            </Field>
+            <Field label="Block">
+              <input type="text" value={editForm.block ?? ""} onChange={(e) => setEditForm({ ...editForm, block: e.target.value })} placeholder="e.g. Strength A" className={inputClass} />
+            </Field>
+            <Field label="Week">
+              <input type="number" value={editForm.week ?? ""} onChange={(e) => setEditForm({ ...editForm, week: e.target.value })} min={1} className={inputClass} />
+            </Field>
+            <Field label="Exercise">
+              <SearchableSelect
+                value={editForm.exerciseId ?? ""}
+                onChange={(val) => setEditForm({ ...editForm, exerciseId: val })}
+                options={exercises}
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Measure">
+              <select value={editForm.measure ?? "kg"} onChange={(e) => setEditForm({ ...editForm, measure: e.target.value })} className={inputClass}>
+                {MEASURES.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </Field>
+            <Field label="Value">
+              <input type="number" value={editForm.value ?? ""} onChange={(e) => setEditForm({ ...editForm, value: e.target.value })} step="any" placeholder="e.g. 80" className={inputClass} />
+            </Field>
+            <Field label="Planned">
+              <input type="number" value={editForm.planned ?? ""} onChange={(e) => setEditForm({ ...editForm, planned: e.target.value })} step="any" placeholder="e.g. 5" className={inputClass} />
+            </Field>
+            <Field label="Actual">
+              <input type="number" value={editForm.actual ?? ""} onChange={(e) => setEditForm({ ...editForm, actual: e.target.value })} step="any" placeholder="e.g. 4" className={inputClass} />
+            </Field>
+            <Field label="Notes (optional)">
+              <input type="text" value={editForm.notes ?? ""} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Any notes" className={inputClass} />
+            </Field>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <button onClick={() => saveEdit(editingId)} className={`${submitClass} inline-flex items-center gap-2`}>
+              Save
+            </button>
+            <button onClick={() => setShowEditModal(false)} className={cancelClass}>Cancel</button>
+          </div>
+        </Modal>
+      )}
 
       {/* Add Set Modal */}
       {showAddModal && (
@@ -794,9 +804,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const inputClass =
   "w-full px-3 py-2 rounded-[14px] border border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
-
-const inlineInputClass =
-  "w-full px-2 py-1 rounded-[8px] border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] text-xs focus:outline-none focus:ring-1 focus:ring-[var(--accent)]";
 
 const submitClass =
   "bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200 disabled:opacity-50";
