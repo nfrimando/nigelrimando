@@ -12,7 +12,7 @@ function Spinner({ light }: { light?: boolean }) {
 }
 
 const MEASURES = ["kg", "lbs", "km", "reps", "seconds", "minutes"];
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 50;
 const d = new Date();
 const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -56,10 +56,31 @@ export default function SetsSection() {
   const [bulkForm, setBulkForm] = useState({ block: "", week: "", date: "" });
   const [bulkLoading, setBulkLoading] = useState(false);
 
-  // Copy modal
+  // Copy modal (bulk)
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [copyDate, setCopyDate] = useState(today);
   const [copyLoading, setCopyLoading] = useState(false);
+
+  // Row copy modal
+  const [showRowCopyModal, setShowRowCopyModal] = useState(false);
+  const [rowCopyTarget, setRowCopyTarget] = useState<SetRow | null>(null);
+  const [rowCopyDate, setRowCopyDate] = useState(today);
+  const [rowCopyLoading, setRowCopyLoading] = useState(false);
+
+
+  // Log Set modal
+  const [showLogSetModal, setShowLogSetModal] = useState(false);
+  const [logSetTarget, setLogSetTarget] = useState<SetRow | null>(null);
+  const [logSetValue, setLogSetValue] = useState("");
+  const [logSetLoading, setLogSetLoading] = useState(false);
+
+  // Toast
+  const [toast, setToast] = useState<string | null>(null);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }
 
   const exerciseMap = Object.fromEntries(exercises.map((e) => [e.id, e.name]));
   const anySelected = selectedIds.size > 0;
@@ -233,6 +254,82 @@ export default function SetsSection() {
     fetchSets(page, search);
   }
 
+  function openRowCopy(s: SetRow) {
+    setRowCopyTarget(s);
+    setRowCopyDate(today);
+    setShowRowCopyModal(true);
+  }
+
+  async function handleRowCopy() {
+    if (!rowCopyTarget) return;
+    setRowCopyLoading(true);
+    const s = rowCopyTarget;
+    await fetch("/api/admin/sets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: rowCopyDate,
+        block: s.block,
+        week: s.week,
+        exerciseId: s.exerciseId,
+        measure: s.measure,
+        value: s.value,
+        planned: s.planned,
+        actual: null,
+        notes: s.notes,
+      }),
+    });
+    setRowCopyLoading(false);
+    setShowRowCopyModal(false);
+    setRowCopyTarget(null);
+    fetchSets(page, search);
+    showToast("Set copied as planned.");
+  }
+
+  async function handleDuplicate(s: SetRow) {
+    await fetch("/api/admin/sets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: s.date,
+        block: s.block,
+        week: s.week,
+        exerciseId: s.exerciseId,
+        measure: s.measure,
+        value: s.value,
+        planned: s.planned,
+        actual: null,
+        notes: s.notes,
+      }),
+    });
+    fetchSets(page, search);
+    showToast("Set duplicated as planned.");
+  }
+
+  function openLogSet(s: SetRow) {
+    setLogSetTarget(s);
+    setLogSetValue(s.planned != null ? String(s.planned) : "");
+    setShowLogSetModal(true);
+  }
+
+  async function handleLogSet() {
+    if (!logSetTarget) return;
+    setLogSetLoading(true);
+    const res = await fetch(`/api/admin/sets/${logSetTarget.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ actual: logSetValue }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setSets((prev) => prev.map((s) => (s.id === logSetTarget.id ? updated : s)));
+    }
+    setLogSetLoading(false);
+    setShowLogSetModal(false);
+    setLogSetTarget(null);
+    showToast("Set logged.");
+  }
+
   async function handleCopyAsPlanned() {
     setCopyLoading(true);
     const selected = sets.filter((s) => selectedIds.has(s.id));
@@ -260,6 +357,7 @@ export default function SetsSection() {
     setSelectedIds(new globalThis.Set());
     fetchSets(1, search);
     setPage(1);
+    showToast(`${selected.length} set${selected.length !== 1 ? "s" : ""} copied as planned.`);
   }
 
   const allPageSelected = sets.length > 0 && sets.every((s) => selectedIds.has(s.id));
@@ -351,15 +449,18 @@ export default function SetsSection() {
 
                   if (isEditing) {
                     return (
-                      <tr key={s.id} className={rowBase}>
+                      <tr key={s.id} className={rowBase} onKeyDown={(e) => { if (e.key === "Enter") saveEdit(s.id); if (e.key === "Escape") setEditingId(null); }}>
                         <td className="py-2 pr-3">
                           <input type="checkbox" checked={selectedIds.has(s.id)} onChange={() => toggleSelect(s.id)} className="accent-[var(--accent)]" />
                         </td>
                         <td className="py-1 pr-2"><input type="date" value={editForm.date ?? ""} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className={inlineInputClass} /></td>
                         <td className="py-1 pr-2">
-                          <select value={editForm.exerciseId ?? ""} onChange={(e) => setEditForm({ ...editForm, exerciseId: e.target.value })} className={inlineInputClass}>
-                            {exercises.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
-                          </select>
+                          <SearchableSelect
+                            value={editForm.exerciseId ?? ""}
+                            onChange={(val) => setEditForm({ ...editForm, exerciseId: val })}
+                            options={exercises}
+                            className={inlineInputClass}
+                          />
                         </td>
                         <td className="py-1 pr-2"><input type="text" value={editForm.block ?? ""} onChange={(e) => setEditForm({ ...editForm, block: e.target.value })} className={inlineInputClass} /></td>
                         <td className="py-1 pr-2"><input type="number" value={editForm.week ?? ""} onChange={(e) => setEditForm({ ...editForm, week: e.target.value })} className={`${inlineInputClass} w-14`} /></td>
@@ -395,9 +496,14 @@ export default function SetsSection() {
                       <td className="py-2 pr-4 text-[var(--text-muted)]">{s.week}</td>
                       <td className="py-2 pr-4 text-[var(--text-muted)]">{s.value != null ? `${s.value} ${s.measure ?? ""}` : "—"}</td>
                       <td className="py-2 pr-4 text-[var(--text-muted)]">{s.planned ?? "—"}</td>
-                      <td className="py-2 pr-4">
+                      <td className="py-2 pr-4" onClick={(e) => e.stopPropagation()}>
                         {isPlanned ? (
-                          <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-[var(--warm)] text-white not-italic">Planned</span>
+                          <button
+                            onClick={() => openLogSet(s)}
+                            className="inline-block px-2 py-0.5 rounded-full text-xs bg-[var(--warm)] text-white not-italic hover:opacity-75 transition-opacity"
+                          >
+                            Log
+                          </button>
                         ) : (
                           <span className="text-[var(--text-muted)]">{s.actual}</span>
                         )}
@@ -406,6 +512,8 @@ export default function SetsSection() {
                       <td className="py-2" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-3">
                           <button onClick={() => startEdit(s)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
+                          <button onClick={() => openRowCopy(s)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Copy to…</button>
+                          <button onClick={() => handleDuplicate(s)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Dupe</button>
                           <button onClick={() => handleDelete(s.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
                         </div>
                       </td>
@@ -506,6 +614,51 @@ export default function SetsSection() {
         </Modal>
       )}
 
+      {/* Row Copy Modal */}
+      {showRowCopyModal && rowCopyTarget && (
+        <Modal title="Copy set as planned" onClose={() => setShowRowCopyModal(false)}>
+          <p className="text-sm text-[var(--text-muted)] mb-4">
+            Creates a planned copy of <strong>{exerciseMap[rowCopyTarget.exerciseId]}</strong>. Pick the target date.
+          </p>
+          <Field label="Date">
+            <input type="date" value={rowCopyDate} onChange={(e) => setRowCopyDate(e.target.value)} className={inputClass} />
+          </Field>
+          <div className="flex gap-3 mt-6">
+            <button onClick={handleRowCopy} disabled={rowCopyLoading} className={`${submitClass} inline-flex items-center gap-2`}>
+              {rowCopyLoading && <Spinner light />}
+              {rowCopyLoading ? "Copying…" : "Copy set"}
+            </button>
+            <button onClick={() => setShowRowCopyModal(false)} className={cancelClass}>Cancel</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Log Set Modal */}
+      {showLogSetModal && logSetTarget && (
+        <Modal title="Log set" onClose={() => setShowLogSetModal(false)}>
+          <p className="text-sm text-[var(--text-muted)] mb-4">
+            Log actual reps for <strong>{exerciseMap[logSetTarget.exerciseId]}</strong>.
+          </p>
+          <Field label="Actual">
+            <input
+              type="number"
+              value={logSetValue}
+              onChange={(e) => setLogSetValue(e.target.value)}
+              step="any"
+              autoFocus
+              className={inputClass}
+            />
+          </Field>
+          <div className="flex gap-3 mt-6">
+            <button onClick={handleLogSet} disabled={logSetLoading} className={`${submitClass} inline-flex items-center gap-2`}>
+              {logSetLoading && <Spinner light />}
+              {logSetLoading ? "Saving…" : "Log set"}
+            </button>
+            <button onClick={() => setShowLogSetModal(false)} className={cancelClass}>Cancel</button>
+          </div>
+        </Modal>
+      )}
+
       {/* Copy as Planned Modal */}
       {showCopyModal && (
         <Modal title={`Copy ${selectedIds.size} sets as planned`} onClose={() => setShowCopyModal(false)}>
@@ -521,6 +674,96 @@ export default function SetsSection() {
             <button onClick={() => setShowCopyModal(false)} className={cancelClass}>Cancel</button>
           </div>
         </Modal>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[var(--success)] text-white text-sm font-medium px-4 py-2.5 rounded-[14px] shadow-lg pointer-events-none">
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SearchableSelect({
+  value,
+  onChange,
+  options,
+  className,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: Exercise[];
+  className?: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [cursor, setCursor] = useState(0);
+
+  useEffect(() => {
+    const sel = options.find((o) => String(o.id) === value);
+    setQuery(sel?.name ?? "");
+  }, [value, options]);
+
+  const filtered = query
+    ? options.filter((o) => o.name.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  function select(opt: Exercise) {
+    onChange(String(opt.id));
+    setQuery(opt.name);
+    setOpen(false);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(true);
+      setCursor((c) => Math.min(c + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      e.stopPropagation();
+      setCursor((c) => Math.max(c - 1, 0));
+    } else if (e.key === "Enter" && open) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (filtered[cursor]) select(filtered[cursor]);
+    } else if (e.key === "Escape" && open) {
+      e.stopPropagation();
+      const sel = options.find((o) => String(o.id) === value);
+      setQuery(sel?.name ?? "");
+      setOpen(false);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={query}
+        autoComplete="off"
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); setCursor(0); }}
+        onFocus={() => { setOpen(true); setCursor(0); }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={handleKeyDown}
+        className={className}
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 top-full left-0 mt-1 w-52 bg-[var(--surface)] border border-[var(--border)] rounded-[10px] shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map((o, i) => (
+            <div
+              key={o.id}
+              onMouseDown={() => select(o)}
+              className={`px-3 py-1.5 text-xs cursor-pointer ${
+                i === cursor ? "bg-[var(--surface-alt)] text-[var(--text)]" : "text-[var(--text-muted)] hover:bg-[var(--surface-alt)]"
+              }`}
+            >
+              {o.name}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
