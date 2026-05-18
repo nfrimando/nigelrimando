@@ -44,7 +44,7 @@ const submitClass =
 const cancelClass =
   "px-4 py-2 rounded-[14px] bg-[var(--surface-alt)] text-[var(--text-muted)] text-sm font-medium hover:text-[var(--text)] transition-colors";
 const inlineInputClass =
-  "px-2 py-1 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)]";
+  "px-2 py-[7px] rounded-[10px] border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] w-full";
 
 type EditState = {
   name: string;
@@ -235,7 +235,7 @@ export default function PersonsSection() {
 
                 {editingId === person.id ? (
                   <>
-                    <td className="py-2 pr-2">
+                    <td className="py-0 pr-2">
                       <input
                         autoFocus
                         className={inlineInputClass}
@@ -247,7 +247,7 @@ export default function PersonsSection() {
                         }}
                       />
                     </td>
-                    <td className="py-2 pr-2">
+                    <td className="py-0 pr-2">
                       <input
                         className={inlineInputClass}
                         placeholder="Nickname"
@@ -259,7 +259,7 @@ export default function PersonsSection() {
                         }}
                       />
                     </td>
-                    <td className="py-2 pr-2">
+                    <td className="py-0 pr-2">
                       <input
                         className={inlineInputClass}
                         placeholder="https://…"
