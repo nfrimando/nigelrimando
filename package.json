@@ -12,7 +12,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:seed-padel": "tsx scripts/seed-padel.ts",
     "db:seed-journal": "tsx scripts/seed-journal.ts",
-    "db:seed-transports": "tsx scripts/seed-transports.ts"
+    "db:seed-transports": "tsx scripts/seed-transports.ts",
+    "db:seed-expenses": "tsx scripts/seed-expenses.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",

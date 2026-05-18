@@ -64,12 +64,12 @@ export default function AdminShell() {
       </header>
 
       <div className="max-w-5xl mx-auto px-6 py-6">
-        <nav className="flex gap-1 mb-8">
+        <nav className="flex gap-1 mb-8 overflow-x-auto scrollbar-none -mx-6 px-6 sm:mx-0 sm:px-0">
           {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setTab(tab)}
-              className={`px-4 py-2 rounded-[14px] text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-[14px] text-sm font-medium transition-colors shrink-0 ${
                 activeTab === tab
                   ? "bg-[var(--accent)] text-white"
                   : "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)]"

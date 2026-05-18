@@ -139,3 +139,24 @@ export const transports = sqliteTable("transports", {
 
 export type Transport = typeof transports.$inferSelect;
 export type NewTransport = typeof transports.$inferInsert;
+
+export const expenses = sqliteTable("expenses", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  date: text("date").notNull(), // 'YYYY-MM-DD'
+  category: text("category").notNull(),
+  subcategory: text("subcategory"),
+  item: text("item").notNull(),
+  amount: real("amount").notNull(),
+  shop: text("shop"),
+  month: text("month"),
+  notes: text("notes"),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export type Expense = typeof expenses.$inferSelect;
+export type NewExpense = typeof expenses.$inferInsert;
