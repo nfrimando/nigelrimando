@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { db } from "@/lib/db";
 import { expenses } from "@/lib/schema";
-import { desc, like, or, count } from "drizzle-orm";
+import { desc, getTableColumns, like, or, sql } from "drizzle-orm";
 
 async function requireAuth() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
@@ -34,15 +34,16 @@ export async function GET(req: NextRequest) {
       )
     : undefined;
 
-  const [{ total }] = await db.select({ total: count() }).from(expenses).where(condition);
-
-  const data = await db
-    .select()
+  const rows = await db
+    .select({ ...getTableColumns(expenses), total: sql<number>`COUNT(*) OVER()` })
     .from(expenses)
     .where(condition)
     .orderBy(desc(expenses.date), desc(expenses.createdAt))
     .limit(limit)
     .offset(offset);
+
+  const total = rows[0]?.total ?? 0;
+  const data = rows.map(({ total: _, ...rest }) => rest);
 
   return NextResponse.json({ data, total, page, totalPages: Math.ceil(total / limit) });
 }

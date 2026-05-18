@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Person } from "@/lib/schema";
 
 type InteractionRow = {
@@ -32,11 +32,11 @@ function Spinner({ light }: { light?: boolean }) {
   );
 }
 
-function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+function Modal({ title, children, onClose, wide }: { title: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={onClose}>
       <div
-        className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6 w-full max-w-lg shadow-lg"
+        className={`bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6 w-full shadow-lg ${wide ? "max-w-4xl" : "max-w-lg"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="font-heading font-bold text-base text-[var(--text)] mb-4">{title}</h3>
@@ -77,6 +77,124 @@ function personDisplay(row: InteractionRow) {
   return row.personNickname ? `${row.personName} (${row.personNickname})` : row.personName;
 }
 
+function personLabel(p: Person) {
+  return p.nickname ? `${p.name} (${p.nickname})` : p.name;
+}
+
+function PersonCombobox({
+  persons,
+  value,
+  onChange,
+}: {
+  persons: Person[];
+  value: string;
+  onChange: (personId: string) => void;
+}) {
+  const selected = persons.find((p) => String(p.id) === value) ?? null;
+  const [query, setQuery] = useState(selected ? personLabel(selected) : "");
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const p = persons.find((p) => String(p.id) === value) ?? null;
+    setQuery(p ? personLabel(p) : "");
+  }, [value, persons]);
+
+  const filtered = query.trim()
+    ? persons.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query.toLowerCase()) ||
+          (p.nickname ?? "").toLowerCase().includes(query.toLowerCase())
+      )
+    : [];
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setQuery(e.target.value);
+    setOpen(true);
+    setActiveIndex(-1);
+    if (!e.target.value.trim()) onChange("");
+  }
+
+  function handleSelect(p: Person) {
+    onChange(String(p.id));
+    setQuery(personLabel(p));
+    setOpen(false);
+    setActiveIndex(-1);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!open || filtered.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => {
+        const next = Math.min(i + 1, filtered.length - 1);
+        scrollItemIntoView(next);
+        return next;
+      });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => {
+        const next = Math.max(i - 1, 0);
+        scrollItemIntoView(next);
+        return next;
+      });
+    } else if (e.key === "Enter" && activeIndex >= 0) {
+      e.preventDefault();
+      handleSelect(filtered[activeIndex]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      setActiveIndex(-1);
+    }
+  }
+
+  function scrollItemIntoView(index: number) {
+    const list = listRef.current;
+    if (!list) return;
+    const item = list.children[index] as HTMLElement | undefined;
+    item?.scrollIntoView({ block: "nearest" });
+  }
+
+  function handleBlur() {
+    setTimeout(() => {
+      setOpen(false);
+      setActiveIndex(-1);
+      const p = persons.find((p) => String(p.id) === value) ?? null;
+      setQuery(p ? personLabel(p) : "");
+    }, 120);
+  }
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={query}
+        onChange={handleChange}
+        onFocus={() => { if (query.trim()) setOpen(true); }}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        placeholder="Search person…"
+        autoComplete="off"
+        className={inputClass}
+      />
+      {open && filtered.length > 0 && (
+        <div ref={listRef} className="absolute z-20 top-full mt-1 w-full bg-[var(--surface)] border border-[var(--border)] rounded-[14px] shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map((p, i) => (
+            <button
+              key={p.id}
+              type="button"
+              onMouseDown={() => handleSelect(p)}
+              className={`w-full text-left px-3 py-2 text-sm text-[var(--text)] first:rounded-t-[14px] last:rounded-b-[14px] ${i === activeIndex ? "bg-[var(--surface-alt)]" : "hover:bg-[var(--surface-alt)]"}`}
+            >
+              {personLabel(p)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function InteractionsSection() {
   const [data, setData] = useState<InteractionRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -87,7 +205,7 @@ export default function InteractionsSection() {
   const [search, setSearch] = useState("");
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [form, setForm] = useState<FormState>(defaultForm);
+  const [rows, setRows] = useState<FormState[]>([defaultForm]);
   const [addError, setAddError] = useState("");
   const [addLoading, setAddLoading] = useState(false);
 
@@ -139,6 +257,18 @@ export default function InteractionsSection() {
     fetchPage(p, search.trim());
   }
 
+  function updateRow(index: number, patch: Partial<FormState>) {
+    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  }
+
+  function addRow() {
+    setRows((prev) => [...prev, { ...defaultForm }]);
+  }
+
+  function removeRow(index: number) {
+    setRows((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     setAddError("");
@@ -147,15 +277,15 @@ export default function InteractionsSection() {
       const res = await fetch("/api/admin/interactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ interactions: rows }),
       });
       if (res.ok) {
-        setForm(defaultForm);
+        setRows([{ ...defaultForm }]);
         setShowAddModal(false);
         fetchPage(page, search.trim());
       } else {
         const json = await res.json();
-        setAddError(json.error || "Failed to add interaction.");
+        setAddError(json.error || "Failed to add interactions.");
       }
     } finally {
       setAddLoading(false);
@@ -236,7 +366,7 @@ export default function InteractionsSection() {
               className={`${inputClass} max-w-[180px]`}
             />
             <button
-              onClick={() => { setForm(defaultForm); setAddError(""); setShowAddModal(true); }}
+              onClick={() => { setRows([{ ...defaultForm }]); setAddError(""); setShowAddModal(true); }}
               className={submitClass}
             >
               + Add interaction
@@ -295,67 +425,76 @@ export default function InteractionsSection() {
       </section>
 
       {showAddModal && (
-        <Modal title="Add interaction" onClose={() => setShowAddModal(false)}>
-          <form onSubmit={handleAdd} className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Date">
+        <Modal title="Add interactions" onClose={() => setShowAddModal(false)} wide>
+          <form onSubmit={handleAdd} className="flex flex-col gap-3">
+            <div className="grid grid-cols-[120px_1fr_70px_80px_1fr_28px] gap-x-2 gap-y-1 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide pb-1 border-b border-[var(--border)]">
+              <span>Date</span>
+              <span>Person</span>
+              <span>Rank</span>
+              <span>Sentiment</span>
+              <span>Note</span>
+              <span />
+            </div>
+            {rows.map((row, i) => (
+              <div key={i} className="grid grid-cols-[120px_1fr_70px_80px_1fr_28px] gap-x-2 items-center">
                 <input
                   type="date"
-                  value={form.entryDate}
-                  onChange={(e) => setForm({ ...form, entryDate: e.target.value })}
+                  value={row.entryDate}
+                  onChange={(e) => updateRow(i, { entryDate: e.target.value })}
                   required
                   className={inputClass}
                 />
-              </Field>
-              <Field label="Person (optional)">
-                <select
-                  value={form.personId}
-                  onChange={(e) => setForm({ ...form, personId: e.target.value })}
-                  className={inputClass}
-                >
-                  <option value="">— none —</option>
-                  {persons.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nickname ? `${p.name} (${p.nickname})` : p.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Rank (optional)">
+                <PersonCombobox
+                  persons={persons}
+                  value={row.personId}
+                  onChange={(v) => updateRow(i, { personId: v })}
+                />
                 <input
                   type="number"
-                  value={form.rank}
-                  onChange={(e) => setForm({ ...form, rank: e.target.value })}
-                  placeholder="e.g. 1"
+                  value={row.rank}
+                  onChange={(e) => updateRow(i, { rank: e.target.value })}
+                  placeholder="—"
                   className={inputClass}
                 />
-              </Field>
-              <Field label="Sentiment (optional)">
                 <input
                   type="number"
-                  value={form.sentiment}
-                  onChange={(e) => setForm({ ...form, sentiment: e.target.value })}
-                  placeholder="-5 to +5"
+                  value={row.sentiment}
+                  onChange={(e) => updateRow(i, { sentiment: e.target.value })}
+                  placeholder="—"
                   min={-5}
                   max={5}
                   className={inputClass}
                 />
-              </Field>
-            </div>
-            <Field label="Note (optional)">
-              <textarea
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-                rows={3}
-                placeholder="Any notes about this interaction…"
-                className={`${inputClass} resize-y`}
-              />
-            </Field>
+                <input
+                  type="text"
+                  value={row.note}
+                  onChange={(e) => updateRow(i, { note: e.target.value })}
+                  placeholder="Note…"
+                  className={inputClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeRow(i)}
+                  disabled={rows.length === 1}
+                  className="text-[var(--text-muted)] hover:text-[var(--warm)] disabled:opacity-0 text-sm leading-none"
+                  aria-label="Remove row"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addRow}
+              className="self-start text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] font-medium mt-1"
+            >
+              + Add another
+            </button>
             {addError && <p className="text-sm text-red-500">{addError}</p>}
-            <div className="flex gap-3 pt-1">
+            <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
               <button type="submit" disabled={addLoading} className={`${submitClass} inline-flex items-center gap-2`}>
                 {addLoading && <Spinner light />}
-                {addLoading ? "Adding…" : "Add interaction"}
+                {addLoading ? "Adding…" : `Add ${rows.length} interaction${rows.length !== 1 ? "s" : ""}`}
               </button>
               <button type="button" onClick={() => setShowAddModal(false)} className={cancelClass}>Cancel</button>
             </div>
@@ -377,18 +516,11 @@ export default function InteractionsSection() {
                 />
               </Field>
               <Field label="Person (optional)">
-                <select
+                <PersonCombobox
+                  persons={persons}
                   value={editForm.personId}
-                  onChange={(e) => setEditForm({ ...editForm, personId: e.target.value })}
-                  className={inputClass}
-                >
-                  <option value="">— none —</option>
-                  {persons.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nickname ? `${p.name} (${p.nickname})` : p.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setEditForm({ ...editForm, personId: v })}
+                />
               </Field>
               <Field label="Rank (optional)">
                 <input

@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { db } from "@/lib/db";
 import { sets, exercises } from "@/lib/schema";
-import { desc, eq, inArray, like, sql, count } from "drizzle-orm";
+import { desc, eq, getTableColumns, inArray, like, sql } from "drizzle-orm";
 
 async function requireAuth() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
@@ -37,18 +37,16 @@ export async function GET(req: NextRequest) {
 
   const baseCondition = exerciseIds ? inArray(sets.exerciseId, exerciseIds) : undefined;
 
-  const [{ total }] = await db
-    .select({ total: count() })
-    .from(sets)
-    .where(baseCondition);
-
-  const data = await db
-    .select()
+  const rows = await db
+    .select({ ...getTableColumns(sets), total: sql<number>`COUNT(*) OVER()` })
     .from(sets)
     .where(baseCondition)
     .orderBy(desc(sets.date), desc(sets.createdAt))
     .limit(limit)
     .offset(offset);
+
+  const total = rows[0]?.total ?? 0;
+  const data = rows.map(({ total: _, ...rest }) => rest);
 
   return NextResponse.json({
     data,

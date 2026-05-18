@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { db } from "@/lib/db";
 import { padelSets, persons } from "@/lib/schema";
-import { desc, asc, like, or, inArray, count, sql } from "drizzle-orm";
+import { desc, asc, getTableColumns, like, or, inArray, sql } from "drizzle-orm";
 
 async function requireAuth() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
@@ -47,15 +47,16 @@ export async function GET(req: NextRequest) {
       )
     : undefined;
 
-  const [{ total }] = await db.select({ total: count() }).from(padelSets).where(condition);
-
-  const data = await db
-    .select()
+  const rows = await db
+    .select({ ...getTableColumns(padelSets), total: sql<number>`COUNT(*) OVER()` })
     .from(padelSets)
     .where(condition)
     .orderBy(desc(padelSets.matchId), asc(padelSets.setNumber))
     .limit(limit)
     .offset(offset);
+
+  const total = rows[0]?.total ?? 0;
+  const data = rows.map(({ total: _, ...rest }) => rest);
 
   return NextResponse.json({ data, total, page, totalPages: Math.ceil(total / limit) });
 }

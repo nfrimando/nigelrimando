@@ -23,9 +23,12 @@ export async function GET() {
     db.selectDistinct({ v: expenses.shop }).from(expenses).where(isNotNull(expenses.shop)).orderBy(asc(expenses.shop)),
   ]);
 
-  return NextResponse.json({
-    categories: cats.map((r) => r.v).filter(Boolean),
-    subcategories: subs.map((r) => r.v).filter(Boolean),
-    shops: shops.map((r) => r.v).filter(Boolean),
-  });
+  return NextResponse.json(
+    {
+      categories: cats.map((r) => r.v).filter(Boolean),
+      subcategories: subs.map((r) => r.v).filter(Boolean),
+      shops: shops.map((r) => r.v).filter(Boolean),
+    },
+    { headers: { "Cache-Control": "private, max-age=60" } },
+  );
 }
