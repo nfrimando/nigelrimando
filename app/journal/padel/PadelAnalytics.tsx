@@ -194,6 +194,35 @@ function SideCard({
   );
 }
 
+function personDisplayName(person: { name: string; nickname?: string | null }): string {
+  if (person.nickname) return person.nickname;
+  const parts = person.name.trim().split(/\s+/);
+  if (parts.length <= 1) return person.name;
+  return `${parts.slice(0, -1).join(" ")} ${parts[parts.length - 1][0]}.`;
+}
+
+function PersonChip({
+  person,
+}: {
+  person: { name: string; nickname?: string | null; imageUrl?: string | null };
+}) {
+  const name = personDisplayName(person);
+  const showImage = !!(person.imageUrl && person.nickname);
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {showImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={person.imageUrl!}
+          alt={name}
+          className="w-5 h-5 rounded-full object-cover shrink-0"
+        />
+      )}
+      {name}
+    </span>
+  );
+}
+
 function PersonTable({
   title,
   rows,
@@ -202,6 +231,8 @@ function PersonTable({
   rows: {
     id: number;
     name: string;
+    nickname: string | null;
+    imageUrl: string | null;
     sets: number;
     wins: number;
     losses: number;
@@ -219,8 +250,8 @@ function PersonTable({
         <div className="flex flex-col gap-3">
           {rows.map((r) => (
             <div key={r.id} className="flex items-center justify-between gap-2">
-              <span className="text-sm text-[var(--text)] font-medium truncate">
-                {r.name}
+              <span className="text-sm text-[var(--text)] font-medium truncate inline-flex items-center gap-1.5">
+                <PersonChip person={r} />
               </span>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-xs text-[var(--text-muted)]">
@@ -328,13 +359,21 @@ function MatchRow({ match }: { match: RecentMatch }) {
       </div>
 
       {/* Players */}
-      <div className="text-sm text-[var(--text)]">
-        <span className="font-medium">
-          Me{match.partner ? ` & ${match.partner.name}` : ""}
+      <div className="text-sm text-[var(--text)] flex flex-wrap items-center gap-x-1 gap-y-0.5">
+        <span className="font-medium inline-flex items-center gap-1">
+          Me
+          {match.partner && (
+            <>
+              <span className="text-[var(--text-muted)]">&</span>
+              <PersonChip person={match.partner} />
+            </>
+          )}
         </span>
-        <span className="text-[var(--text-muted)]"> vs </span>
-        <span>
-          {match.opponents.left.name} & {match.opponents.right.name}
+        <span className="text-[var(--text-muted)]">vs</span>
+        <span className="inline-flex items-center gap-1">
+          <PersonChip person={match.opponents.left} />
+          <span className="text-[var(--text-muted)]">&</span>
+          <PersonChip person={match.opponents.right} />
         </span>
       </div>
 

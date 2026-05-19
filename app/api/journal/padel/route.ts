@@ -10,6 +10,8 @@ const MY_PERSON_ID = 292;
 type PersonStat = {
   id: number;
   name: string;
+  nickname: string | null;
+  imageUrl: string | null;
   sets: number;
   wins: number;
   losses: number;
@@ -31,13 +33,15 @@ type MatchSet = {
   videoUrl: string | null;
 };
 
+type PersonRef = { id: number; name: string; nickname: string | null; imageUrl: string | null };
+
 export type RecentMatch = {
   matchId: number;
   date: string;
   venue: string | null;
   sets: MatchSet[];
-  partner: { id: number; name: string } | null;
-  opponents: { left: { id: number; name: string }; right: { id: number; name: string } };
+  partner: PersonRef | null;
+  opponents: { left: PersonRef; right: PersonRef };
   setsWon: number;
   setsLost: number;
 };
@@ -73,7 +77,7 @@ export async function GET(req: NextRequest) {
     db.select().from(persons),
   ]);
 
-  const personMap = new Map(personRows.map((p) => [p.id, p.name]));
+  const personMap = new Map(personRows.map((p) => [p.id, { name: p.name, nickname: p.nickname ?? null, imageUrl: p.imageUrl ?? null }]));
 
   let totalWins = 0;
   let totalLosses = 0;
@@ -148,11 +152,26 @@ export async function GET(req: NextRequest) {
         sets: [],
         partner:
           partnerId !== null
-            ? { id: partnerId, name: personMap.get(partnerId) ?? `Person ${partnerId}` }
+            ? {
+                id: partnerId,
+                name: personMap.get(partnerId)?.name ?? `Person ${partnerId}`,
+                nickname: personMap.get(partnerId)?.nickname ?? null,
+                imageUrl: personMap.get(partnerId)?.imageUrl ?? null,
+              }
             : null,
         opponents: {
-          left: { id: row.opponentLeft, name: personMap.get(row.opponentLeft) ?? `Person ${row.opponentLeft}` },
-          right: { id: row.opponentRight, name: personMap.get(row.opponentRight) ?? `Person ${row.opponentRight}` },
+          left: {
+            id: row.opponentLeft,
+            name: personMap.get(row.opponentLeft)?.name ?? `Person ${row.opponentLeft}`,
+            nickname: personMap.get(row.opponentLeft)?.nickname ?? null,
+            imageUrl: personMap.get(row.opponentLeft)?.imageUrl ?? null,
+          },
+          right: {
+            id: row.opponentRight,
+            name: personMap.get(row.opponentRight)?.name ?? `Person ${row.opponentRight}`,
+            nickname: personMap.get(row.opponentRight)?.nickname ?? null,
+            imageUrl: personMap.get(row.opponentRight)?.imageUrl ?? null,
+          },
         },
         setsWon: 0,
         setsLost: 0,
@@ -170,7 +189,9 @@ export async function GET(req: NextRequest) {
     [...map.entries()]
       .map(([id, { wins, losses }]) => ({
         id,
-        name: personMap.get(id) ?? `Person ${id}`,
+        name: personMap.get(id)?.name ?? `Person ${id}`,
+        nickname: personMap.get(id)?.nickname ?? null,
+        imageUrl: personMap.get(id)?.imageUrl ?? null,
         sets: wins + losses,
         wins,
         losses,
