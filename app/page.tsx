@@ -29,6 +29,7 @@ function MediumCard({
   date,
   excerpt,
   thumbnailUrl,
+  readingTime,
 }: Extract<ContentItem, { type: "medium" }>) {
   const formatted = new Date(date).toLocaleDateString("en-US", {
     year: "numeric",
@@ -47,11 +48,11 @@ function MediumCard({
         />
       )}
       <div className="p-6 flex flex-col gap-3 flex-1">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-mono text-muted uppercase tracking-widest">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-mono text-muted uppercase tracking-widest shrink-0">
             Medium
           </span>
-          <span className="text-xs font-mono text-muted">{formatted}</span>
+          <span className="text-[10px] font-mono text-muted text-right">{readingTime} min read · {formatted}</span>
         </div>
         <p className="text-base font-bold font-heading text-text leading-tight">
           {title}

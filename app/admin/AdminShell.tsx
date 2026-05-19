@@ -12,29 +12,21 @@ import ExpensesSection from "./ExpensesSection";
 import HabitsSection from "./HabitsSection";
 import HabitEntriesSection from "./HabitEntriesSection";
 
-const TABS = [
-  "Exercises",
-  "Sets",
-  "Padel Sets",
-  "Persons",
-  "Thoughts",
-  "Interactions",
-  "Transports",
-  "Expenses",
-  "Habits",
-  "Habit Entries",
-] as const;
-type Tab = (typeof TABS)[number];
+const DAILY_TABS = ["Sets", "Padel Sets", "Thoughts", "Interactions", "Transports", "Expenses", "Habit Entries"] as const;
+const SETUP_TABS = ["Exercises", "Persons", "Habits"] as const;
+const ALL_TABS = [...DAILY_TABS, ...SETUP_TABS] as const;
+
+type Tab = (typeof ALL_TABS)[number];
 
 function isValidTab(t: string | null): t is Tab {
-  return TABS.includes(t as Tab);
+  return ALL_TABS.includes(t as Tab);
 }
 
 export default function AdminShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const activeTab: Tab = isValidTab(tabParam) ? tabParam : "Exercises";
+  const activeTab: Tab = isValidTab(tabParam) ? tabParam : "Sets";
 
   function setTab(tab: Tab) {
     router.replace(`/admin?tab=${encodeURIComponent(tab)}`, { scroll: false });
@@ -70,20 +62,38 @@ export default function AdminShell() {
       </header>
 
       <div className="max-w-5xl mx-auto px-6 py-6">
-        <nav className="flex gap-1 mb-8 overflow-x-auto scrollbar-none -mx-6 px-6 sm:mx-0 sm:px-0">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setTab(tab)}
-              className={`px-4 py-2 rounded-[14px] text-sm font-medium transition-colors shrink-0 ${
-                activeTab === tab
-                  ? "bg-[var(--accent)] text-white"
-                  : "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)]"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+        <nav className="mb-8 space-y-2">
+          <div className="flex gap-1 overflow-x-auto scrollbar-none -mx-6 px-6 sm:mx-0 sm:px-0">
+            {DAILY_TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setTab(tab)}
+                className={`px-4 py-2 rounded-[14px] text-sm font-medium transition-colors shrink-0 ${
+                  activeTab === tab
+                    ? "bg-[var(--accent)] text-white"
+                    : "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)]"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1 items-center overflow-x-auto scrollbar-none -mx-6 px-6 sm:mx-0 sm:px-0">
+            <span className="text-[10px] font-medium text-[var(--text-muted)] opacity-40 shrink-0 uppercase tracking-widest pr-2 mr-1 border-r border-[var(--border)]">Setup</span>
+            {SETUP_TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setTab(tab)}
+                className={`px-3 py-1 rounded-[10px] text-xs font-medium transition-colors shrink-0 ${
+                  activeTab === tab
+                    ? "bg-[var(--accent)] text-white opacity-80"
+                    : "text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:bg-[var(--surface-alt)]"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </nav>
 
         {activeTab === "Exercises" && <ExercisesSection />}

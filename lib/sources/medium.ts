@@ -38,6 +38,7 @@ export async function getMediumPosts(): Promise<ContentItem[]> {
         date: item.pubDate ? new Date(String(item.pubDate)).toISOString() : new Date(0).toISOString(),
         excerpt: trimExcerpt(stripHtml(String(item.description ?? ""))),
         thumbnailUrl: extractFirstImageUrl(encodedContent),
+        readingTime: Math.max(1, Math.ceil(stripHtml(encodedContent).trim().split(/\s+/).length / 200)),
       };
     });
   } catch {

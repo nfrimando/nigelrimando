@@ -45,9 +45,11 @@ const PAGE_SIZE = 25;
 
 type EntryRow = HabitEntry & { habitLabel: string; habitKey: string };
 type FormState = { date: string; habitId: string; numericValue: string; textValue: string };
+type LogForm = { numericValue: string; textValue: string };
 
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
 const defaultForm: FormState = { date: today, habitId: "", numericValue: "", textValue: "" };
+const defaultLogForm: LogForm = { numericValue: "", textValue: "" };
 
 export default function HabitEntriesSection() {
   const [data, setData] = useState<EntryRow[]>([]);
@@ -68,6 +70,15 @@ export default function HabitEntriesSection() {
   const [editForm, setEditForm] = useState<FormState>(defaultForm);
   const [editError, setEditError] = useState("");
   const [saveError, setSaveError] = useState("");
+
+  // Log Habits wizard
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [logDate, setLogDate] = useState(today);
+  const [logStep, setLogStep] = useState(0);
+  const [logValues, setLogValues] = useState<Record<number, LogForm>>({});
+  const [currentLogForm, setCurrentLogForm] = useState<LogForm>(defaultLogForm);
+  const [logLoading, setLogLoading] = useState(false);
+  const [logError, setLogError] = useState("");
 
   async function fetchHabits() {
     const res = await fetch("/api/admin/habits");
@@ -189,6 +200,88 @@ export default function HabitEntriesSection() {
     fetchPage(page, search.trim());
   }
 
+  // Log Habits wizard helpers
+  const activeHabits = habits.filter((h) => h.isActive);
+  const currentHabit = activeHabits[logStep];
+  const isLastStep = logStep === activeHabits.length - 1;
+
+  function openLogModal() {
+    setLogDate(today);
+    setLogStep(0);
+    setLogValues({});
+    setCurrentLogForm(defaultLogForm);
+    setLogError("");
+    setShowLogModal(true);
+  }
+
+  function logPrev() {
+    const newValues = { ...logValues };
+    if (currentLogForm.numericValue !== "" || currentLogForm.textValue !== "") {
+      newValues[currentHabit.id] = currentLogForm;
+    }
+    const prevHabit = activeHabits[logStep - 1];
+    setLogValues(newValues);
+    setCurrentLogForm(newValues[prevHabit.id] ?? defaultLogForm);
+    setLogStep((s) => s - 1);
+  }
+
+  function advanceStep(includeCurrentValue: boolean) {
+    const newValues = { ...logValues };
+    if (includeCurrentValue && (currentLogForm.numericValue !== "" || currentLogForm.textValue !== "")) {
+      newValues[currentHabit.id] = currentLogForm;
+    } else if (!includeCurrentValue) {
+      delete newValues[currentHabit.id];
+    }
+
+    if (isLastStep) {
+      submitLog(newValues);
+    } else {
+      const nextHabit = activeHabits[logStep + 1];
+      setLogValues(newValues);
+      setCurrentLogForm(newValues[nextHabit.id] ?? defaultLogForm);
+      setLogStep((s) => s + 1);
+    }
+  }
+
+  async function submitLog(finalValues: Record<number, LogForm>) {
+    const entries = Object.entries(finalValues).map(([habitId, vals]) => ({
+      date: logDate,
+      habitId,
+      numericValue: vals.numericValue,
+      textValue: vals.textValue,
+    }));
+
+    if (entries.length === 0) {
+      setShowLogModal(false);
+      return;
+    }
+
+    setLogLoading(true);
+    setLogError("");
+    try {
+      const results = await Promise.all(
+        entries.map((entry) =>
+          fetch("/api/admin/habit-entries", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(entry),
+          })
+        )
+      );
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length > 0) {
+        setLogError(`${failed.length} entr${failed.length === 1 ? "y" : "ies"} failed to save.`);
+      } else {
+        setShowLogModal(false);
+        fetchPage(page, search.trim());
+      }
+    } catch {
+      setLogError("Failed to save entries. Please try again.");
+    } finally {
+      setLogLoading(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <section className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6">
@@ -208,6 +301,13 @@ export default function HabitEntriesSection() {
               placeholder="Search…"
               className={`${inputClass} max-w-[180px]`}
             />
+            <button
+              onClick={openLogModal}
+              disabled={activeHabits.length === 0}
+              className={`${cancelClass} disabled:opacity-40 disabled:cursor-not-allowed`}
+            >
+              Log Habits
+            </button>
             <button
               onClick={() => { setForm(defaultForm); setAddError(""); setShowAddModal(true); }}
               className={submitClass}
@@ -324,6 +424,120 @@ export default function HabitEntriesSection() {
               <button type="button" onClick={() => setShowAddModal(false)} className={cancelClass}>Cancel</button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {showLogModal && currentHabit && (
+        <Modal title="Log Habits" onClose={() => setShowLogModal(false)}>
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center justify-between gap-4">
+              <input
+                type="date"
+                value={logDate}
+                onChange={(e) => setLogDate(e.target.value)}
+                className={`${inputClass} w-auto`}
+              />
+              <span className="text-xs text-[var(--text-muted)] font-mono shrink-0">
+                {logStep + 1} / {activeHabits.length}
+              </span>
+            </div>
+
+            <div className="w-full bg-[var(--surface-alt)] rounded-full h-1">
+              <div
+                className="bg-[var(--accent)] h-1 rounded-full transition-all duration-200"
+                style={{ width: `${((logStep + 1) / activeHabits.length) * 100}%` }}
+              />
+            </div>
+
+            <div>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1">{currentHabit.category}</p>
+              <h4 className="font-heading font-bold text-base text-[var(--text)]">{currentHabit.label}</h4>
+              {currentHabit.description && (
+                <p className="text-sm text-[var(--text-muted)] mt-0.5">{currentHabit.description}</p>
+              )}
+            </div>
+
+            <Field label={currentHabit.valueType === "binary" ? "Did you do it?" : "Value"}>
+              {currentHabit.valueType === "binary" ? (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentLogForm((f) => ({ ...f, numericValue: f.numericValue === "1" ? "" : "1" }))}
+                    className={`px-4 py-2 rounded-[14px] text-sm font-medium border transition-colors ${
+                      currentLogForm.numericValue === "1"
+                        ? "bg-[var(--success)] text-white border-transparent"
+                        : "bg-[var(--surface-alt)] text-[var(--text-muted)] border-[var(--border)]"
+                    }`}
+                  >
+                    ✓ Done
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentLogForm((f) => ({ ...f, numericValue: f.numericValue === "0" ? "" : "0" }))}
+                    className={`px-4 py-2 rounded-[14px] text-sm font-medium border transition-colors ${
+                      currentLogForm.numericValue === "0"
+                        ? "bg-[var(--warm)] text-white border-transparent"
+                        : "bg-[var(--surface-alt)] text-[var(--text-muted)] border-[var(--border)]"
+                    }`}
+                  >
+                    ✗ Not done
+                  </button>
+                </div>
+              ) : (
+                <input
+                  type="number"
+                  step={currentHabit.valueType === "scaled" ? "0.25" : "1"}
+                  min="0"
+                  value={currentLogForm.numericValue}
+                  onChange={(e) => setCurrentLogForm((f) => ({ ...f, numericValue: e.target.value }))}
+                  placeholder={currentHabit.valueType === "scaled" ? "0 – 1" : "e.g. 3"}
+                  className={inputClass}
+                />
+              )}
+            </Field>
+
+            <Field label="Notes (optional)">
+              <input
+                type="text"
+                value={currentLogForm.textValue}
+                onChange={(e) => setCurrentLogForm((f) => ({ ...f, textValue: e.target.value }))}
+                placeholder="Any notes…"
+                className={inputClass}
+              />
+            </Field>
+
+            {logError && <p className="text-sm text-red-500">{logError}</p>}
+
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <button
+                type="button"
+                onClick={logPrev}
+                disabled={logStep === 0}
+                className={`${cancelClass} disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                ← Back
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => advanceStep(false)}
+                  disabled={logLoading}
+                  className={cancelClass}
+                >
+                  Skip
+                </button>
+                <button
+                  type="button"
+                  onClick={() => advanceStep(true)}
+                  disabled={logLoading}
+                  className={`${submitClass} inline-flex items-center gap-2`}
+                >
+                  {logLoading && <Spinner light />}
+                  {isLastStep ? "Finish" : "Next →"}
+                </button>
+              </div>
+            </div>
+          </div>
         </Modal>
       )}
 

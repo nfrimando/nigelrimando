@@ -66,7 +66,13 @@ export default function SetsSection() {
   const [showRowCopyModal, setShowRowCopyModal] = useState(false);
   const [rowCopyTarget, setRowCopyTarget] = useState<SetRow | null>(null);
   const [rowCopyDate, setRowCopyDate] = useState(today);
+  const [rowCopyBlock, setRowCopyBlock] = useState("");
+  const [rowCopyWeek, setRowCopyWeek] = useState("1");
+  const [rowCopyPlanned, setRowCopyPlanned] = useState("");
   const [rowCopyLoading, setRowCopyLoading] = useState(false);
+
+  // Dupe loading
+  const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
 
   // Log Set modal
   const [showLogSetModal, setShowLogSetModal] = useState(false);
@@ -258,6 +264,9 @@ export default function SetsSection() {
   function openRowCopy(s: SetRow) {
     setRowCopyTarget(s);
     setRowCopyDate(today);
+    setRowCopyBlock(s.block);
+    setRowCopyWeek(String((s.week ?? 0) + 1));
+    setRowCopyPlanned(s.planned != null ? String(s.planned) : "");
     setShowRowCopyModal(true);
   }
 
@@ -270,12 +279,12 @@ export default function SetsSection() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         date: rowCopyDate,
-        block: s.block,
-        week: s.week,
+        block: rowCopyBlock,
+        week: rowCopyWeek,
         exerciseId: s.exerciseId,
         measure: s.measure,
         value: s.value,
-        planned: s.planned,
+        planned: rowCopyPlanned !== "" ? rowCopyPlanned : null,
         actual: null,
         notes: s.notes,
       }),
@@ -288,6 +297,7 @@ export default function SetsSection() {
   }
 
   async function handleDuplicate(s: SetRow) {
+    setDuplicatingId(s.id);
     await fetch("/api/admin/sets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -303,6 +313,7 @@ export default function SetsSection() {
         notes: s.notes,
       }),
     });
+    setDuplicatingId(null);
     fetchSets(page, search);
     showToast("Set duplicated as planned.");
   }
@@ -475,7 +486,13 @@ export default function SetsSection() {
                         <div className="flex gap-3">
                           <button onClick={() => startEdit(s)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
                           <button onClick={() => openRowCopy(s)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Copy to…</button>
-                          <button onClick={() => handleDuplicate(s)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Dupe</button>
+                          <button
+                            onClick={() => handleDuplicate(s)}
+                            disabled={duplicatingId === s.id}
+                            className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors inline-flex items-center gap-1 disabled:opacity-50"
+                          >
+                            {duplicatingId === s.id ? <Spinner /> : "Dupe"}
+                          </button>
                           <button onClick={() => handleDelete(s.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
                         </div>
                       </td>
@@ -628,11 +645,22 @@ export default function SetsSection() {
       {showRowCopyModal && rowCopyTarget && (
         <Modal title="Copy set as planned" onClose={() => setShowRowCopyModal(false)}>
           <p className="text-sm text-[var(--text-muted)] mb-4">
-            Creates a planned copy of <strong>{exerciseMap[rowCopyTarget.exerciseId]}</strong>. Pick the target date.
+            Creates a planned copy of <strong>{exerciseMap[rowCopyTarget.exerciseId]}</strong>.
           </p>
-          <Field label="Date">
-            <input type="date" value={rowCopyDate} onChange={(e) => setRowCopyDate(e.target.value)} className={inputClass} />
-          </Field>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Date">
+              <input type="date" value={rowCopyDate} onChange={(e) => setRowCopyDate(e.target.value)} className={inputClass} />
+            </Field>
+            <Field label="Block">
+              <input type="text" value={rowCopyBlock} onChange={(e) => setRowCopyBlock(e.target.value)} className={inputClass} />
+            </Field>
+            <Field label="Week">
+              <input type="number" value={rowCopyWeek} onChange={(e) => setRowCopyWeek(e.target.value)} min={1} className={inputClass} />
+            </Field>
+            <Field label="Planned">
+              <input type="number" value={rowCopyPlanned} onChange={(e) => setRowCopyPlanned(e.target.value)} step="any" placeholder="e.g. 5" className={inputClass} />
+            </Field>
+          </div>
           <div className="flex gap-3 mt-6">
             <button onClick={handleRowCopy} disabled={rowCopyLoading} className={`${submitClass} inline-flex items-center gap-2`}>
               {rowCopyLoading && <Spinner light />}
