@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Nav from "@/components/Nav";
+import ProjectCard from "@/components/ProjectCard";
 import { db } from "@/lib/db";
 import { sets, padelSets, transports } from "@/lib/schema";
 import { and, count, eq, sql } from "drizzle-orm";
@@ -46,7 +47,9 @@ export default async function Home() {
     db
       .select({
         totalSets: count(),
-        latestDate: sql<string | null>`MAX(${sets.date})`,
+        latestDate: sql<
+          string | null
+        >`MAX(CASE WHEN ${sets.actual} IS NOT NULL THEN ${sets.date} END)`,
       })
       .from(sets),
     db
@@ -340,6 +343,45 @@ export default async function Home() {
                 View log →
               </a>
             </div>
+          </div>
+        </section>
+
+        <Divider />
+
+        {/* ── Live Projects ─────────────────────────────────────────────── */}
+        <section id="projects" className="py-24">
+          <div className="mb-10">
+            <SectionLabel>Live projects</SectionLabel>
+            <h2 className="text-3xl font-bold font-heading text-text mb-2">
+              Things I&apos;ve shipped
+            </h2>
+            <p className="text-muted text-sm">
+              Applying "Data First" thinking to build useful tools and products.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ProjectCard
+              name="Padel League PH"
+              tagline="I was one of the earliest adopters of padel in the PH and we needed more people to play with. One match after another and now we run the league."
+              url="https://www.padelph.com"
+              images={[
+                "/assets/projects/padelph-1.webp",
+                "/assets/projects/padelph-2.webp",
+                "/assets/projects/padelph-3.webp",
+                "/assets/projects/padelph-4.webp",
+              ]}
+            />
+            <ProjectCard
+              name="PadelSense"
+              tagline="We kept arguing who made more mistakes. Now we know. Log points, analyze key stats, and rewatch highlights. Request an analysis here!"
+              url="https://www.padelsense.app"
+              images={[
+                "/assets/projects/padelsense-1.webp",
+                "/assets/projects/padelsense-2.webp",
+                "/assets/projects/padelsense-3.webp",
+                "/assets/projects/padelsense-4.webp",
+              ]}
+            />
           </div>
         </section>
 
