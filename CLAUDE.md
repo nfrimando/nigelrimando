@@ -123,8 +123,32 @@ Cat allowed as subtle recurring brand element.
 
 1. Hero (clear value prop)
 2. Data journal (exercise insights first)
-3. Personal note + cat
-4. CTA
+3. Live projects
+4. Stream ("Thinking out loud" — horizontal scroll feed)
+5. Personal note
+6. CTA
+
+## Stream Section ("Thinking out loud")
+
+Live on homepage (`#stream`). A horizontally scrollable feed of mixed content, sorted by date descending.
+
+**Architecture:**
+- `lib/content-stream.ts` — `ContentItem` union type + `getContentStream()` aggregator
+- `lib/sources/medium.ts` — fetches `https://medium.com/feed/@nfrimando` via RSS (ISR, revalidates daily). Extracts title, url, pubDate, excerpt (stripped HTML), and `thumbnailUrl` (first `cdn-images` src from `content:encoded`)
+- `lib/sources/thoughts.ts` — stub for now; will query `thoughts` DB table filtered by `published: true`
+
+**ContentItem type:**
+```ts
+| { type: "medium"; title; url; date; excerpt; thumbnailUrl? }
+| { type: "thought"; id; text; date; imageUrl? }
+| { type: "youtube"; url; title; date }  // future
+```
+
+**To add a new source:** create `lib/sources/<name>.ts` returning `ContentItem[]`, add one `await` call in `getContentStream()`, add a card component + branch in the stream map in `page.tsx`. No other structural changes needed.
+
+**Card layout:** fixed `w-72 shrink-0` cards in a `flex overflow-x-auto` container. `MediumCard` shows thumbnail image at top (h-44, object-cover), then type badge, date, title, excerpt, and "Read on Medium →" link. `ThoughtCard` shows date, text body, optional image.
+
+**Future sources to consider:** curated links/reads worth sharing from other sites, YouTube embeds.
 
 ## TODO: Deferred homepage sections
 
@@ -132,12 +156,6 @@ Cat allowed as subtle recurring brand element.
 - PadelLens as the featured card (full-stack analytics for padel players/clubs; Next.js, TypeScript, PostgreSQL, Python; status: Live)
 - Grid of smaller cards for other projects (Project Beta: Go CLI, open source; Project Gamma: React Native finance app)
 - Each card: name, tagline, description, tags, status badge, GitHub/Live links
-
-### Writing & insights (Thinking out loud)
-- Section label: "Thinking out loud"
-- List of post cards: title, description, date (currently "Coming soon")
-- Initial posts: "Why most data pipelines fail before they're useful", "The 80% rule for API design"
-- Cards link out to full posts when published
 
 ### How I can help (Consulting capability)
 - 4 capability cards in a 2-col grid: Product Infrastructure, Data Systems, Full-Stack Development, Technical Strategy

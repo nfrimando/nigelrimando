@@ -5,6 +5,9 @@ import { db } from "@/lib/db";
 import { sets, padelSets, transports } from "@/lib/schema";
 import { and, count, eq, sql } from "drizzle-orm";
 import { Dumbbell } from "lucide-react";
+import { getContentStream } from "@/lib/content-stream";
+import type { ContentItem } from "@/lib/content-stream";
+import StreamScroller from "@/components/StreamScroller";
 
 // ── Components ────────────────────────────────────────────────────────────────
 
@@ -20,9 +23,83 @@ function Divider() {
   return <div className="border-t border-border" />;
 }
 
+function MediumCard({
+  title,
+  url,
+  date,
+  excerpt,
+  thumbnailUrl,
+}: Extract<ContentItem, { type: "medium" }>) {
+  const formatted = new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  return (
+    <div className="w-72 shrink-0 rounded-[20px] bg-surface border border-border overflow-hidden flex flex-col">
+      {thumbnailUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={thumbnailUrl}
+          alt=""
+          className="w-full h-44 object-cover shrink-0"
+          loading="lazy"
+        />
+      )}
+      <div className="p-6 flex flex-col gap-3 flex-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-mono text-muted uppercase tracking-widest">
+            Medium
+          </span>
+          <span className="text-xs font-mono text-muted">{formatted}</span>
+        </div>
+        <p className="text-base font-bold font-heading text-text leading-tight">
+          {title}
+        </p>
+        <p className="text-sm text-muted leading-relaxed flex-1">{excerpt}</p>
+        <div>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block px-4 py-2 rounded-[14px] bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors duration-[180ms]"
+          >
+            Read on Medium →
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ThoughtCard({
+  text,
+  date,
+  imageUrl,
+}: Extract<ContentItem, { type: "thought" }>) {
+  const formatted = new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  return (
+    <div className="rounded-[20px] bg-surface border border-border p-7 flex flex-col gap-3">
+      <span className="text-xs font-mono text-muted">{formatted}</span>
+      <p className="text-sm text-text leading-relaxed">{text}</p>
+      {imageUrl && (
+        <div className="relative w-full aspect-[4/3] rounded-[14px] overflow-hidden mt-1">
+          <Image src={imageUrl} alt="" fill className="object-cover" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function daysSince(dateStr: string | null): string {
   if (!dateStr) return "—";
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+  }).format(new Date());
   const [ty, tm, td] = today.split("-").map(Number);
   const [ry, rm, rd] = dateStr.split("-").map(Number);
   const todayMs = new Date(ty, tm - 1, td).getTime();
@@ -34,7 +111,8 @@ function daysSince(dateStr: string | null): string {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function Home() {
-  const [[gymStats], [padelStats], [ebikeStats]] = await Promise.all([
+  const [stream, [gymStats], [padelStats], [ebikeStats]] = await Promise.all([
+    getContentStream(),
     db
       .select({
         totalSets: count(),
@@ -374,6 +452,30 @@ export default async function Home() {
               ]}
             />
           </div>
+        </section>
+
+        <Divider />
+
+        {/* ── Stream ────────────────────────────────────────────────────── */}
+        <section id="stream" className="py-24">
+          <div className="mb-10">
+            <SectionLabel>Thinking out loud</SectionLabel>
+            <h2 className="text-3xl font-bold font-heading text-text mb-2">
+              What&apos;s on my mind
+            </h2>
+            <p className="text-muted text-sm">
+              Things I find worth sharing. Share your thoughts and let&apos;s
+              talk!
+            </p>
+          </div>
+          <StreamScroller>
+            {stream.map((item) => {
+              if (item.type === "medium")
+                return <MediumCard key={item.url} {...item} />;
+              if (item.type === "thought")
+                return <ThoughtCard key={item.id} {...item} />;
+            })}
+          </StreamScroller>
         </section>
 
         <Divider />
