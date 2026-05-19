@@ -327,7 +327,7 @@ export default function SetsSection() {
 
                   const isPlanned = s.actual == null;
                   els.push(
-                  <div key={s.id} className="py-3">
+                  <div key={s.id} className="py-3 cursor-pointer" onClick={() => startEdit(s)}>
                     <div className="min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <span className={`font-medium text-sm truncate ${isPlanned ? "text-[var(--text-muted)] italic" : "text-[var(--text)]"}`}>
@@ -342,7 +342,7 @@ export default function SetsSection() {
                           {s.planned != null && <span>Planned: {s.planned}</span>}
                           {s.notes && <span className="italic">{s.notes}</span>}
                         </div>
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center justify-between gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-2">
                             {isPlanned ? (
                               <button
@@ -356,7 +356,6 @@ export default function SetsSection() {
                             )}
                           </div>
                           <div className="flex gap-3">
-                            <button onClick={() => startEdit(s)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
                             <button onClick={() => openRowCopy(s)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Copy</button>
                             <button
                               onClick={() => handleDuplicate(s)}
@@ -437,7 +436,6 @@ export default function SetsSection() {
                         <td className="py-2 pr-4 text-[var(--text-muted)]">{s.notes ?? "—"}</td>
                         <td className="py-2" onClick={(e) => e.stopPropagation()}>
                           <div className="flex gap-3">
-                            <button onClick={() => startEdit(s)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
                             <button onClick={() => openRowCopy(s)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Copy to…</button>
                             <button
                               onClick={() => handleDuplicate(s)}

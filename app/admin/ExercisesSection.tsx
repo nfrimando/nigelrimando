@@ -144,16 +144,13 @@ export default function ExercisesSection() {
               </thead>
               <tbody>
                 {filtered.map((ex) => (
-                  <tr key={ex.id} className="border-b border-[var(--border)] last:border-0">
+                  <tr key={ex.id} className="border-b border-[var(--border)] last:border-0 cursor-pointer hover:bg-[var(--surface-alt)] transition-colors" onClick={() => openEdit(ex)}>
                     <td className="py-2 pr-4 text-[var(--text)]">{ex.name}</td>
                     <td className="py-2 pr-4 text-[var(--text-muted)]">{ex.type}</td>
                     <td className="py-2 pr-4 text-[var(--text-muted)]">{ex.primaryTarget}</td>
                     <td className="py-2 pr-4 text-[var(--text-muted)]">{ex.secondaryTarget ?? "—"}</td>
-                    <td className="py-2">
-                      <div className="flex items-center gap-3">
-                        <button onClick={() => openEdit(ex)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
-                        <button onClick={() => handleDelete(ex.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
-                      </div>
+                    <td className="py-2" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => handleDelete(ex.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
                     </td>
                   </tr>
                 ))}

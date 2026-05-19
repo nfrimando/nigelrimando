@@ -455,7 +455,6 @@ export default function ExpensesSection() {
                         {row.notes && <span className="italic">{row.notes}</span>}
                       </div>
                       <div className="flex justify-end gap-3" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
                         <button onClick={() => handleDelete(row.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Del</button>
                       </div>
                     </div>
@@ -509,7 +508,6 @@ export default function ExpensesSection() {
                           <td className="py-2 pr-4 text-[var(--text-muted)] max-w-xs">{row.notes ?? "—"}</td>
                           <td className="py-2" onClick={(e) => e.stopPropagation()}>
                             <div className="flex gap-2 items-center">
-                              <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
                               <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
                             </div>
                           </td>

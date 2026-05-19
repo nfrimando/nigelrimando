@@ -295,7 +295,6 @@ export default function PersonsSection() {
                       </div>
                     ) : (
                       <div className="flex gap-2">
-                        <button onClick={() => startEdit(person)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
                         <button onClick={() => handleDelete(person.id, person.name)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
                       </div>
                     )}

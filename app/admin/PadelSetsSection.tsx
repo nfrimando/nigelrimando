@@ -495,7 +495,7 @@ export default function PadelSetsSection() {
                 const won = row.gamesWon > row.gamesLost;
                 const lost = row.gamesWon < row.gamesLost;
                 els.push(
-                  <div key={row.id} className="py-3">
+                  <div key={row.id} className="py-3 cursor-pointer" onClick={() => startEdit(row)}>
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="text-xs text-[var(--text-muted)]">
                         Match {row.matchId} · Set {row.setNumber}
@@ -526,8 +526,7 @@ export default function PadelSetsSection() {
                         ) : null}
                         {row.notes ? <NoteTooltip note={row.notes} /> : null}
                       </div>
-                      <div className="flex gap-3">
-                        <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
+                      <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => handleDelete(row.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Del</button>
                       </div>
                     </div>
@@ -602,7 +601,6 @@ export default function PadelSetsSection() {
                           </div>
                         </td>
                         <td className="py-2 flex gap-1" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
                           <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
                         </td>
                       </tr>

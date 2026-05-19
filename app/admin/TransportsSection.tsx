@@ -448,7 +448,6 @@ export default function TransportsSection() {
                           </a>
                         ) : <span />}
                         <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
                           <button onClick={() => handleDelete(row.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Del</button>
                         </div>
                       </div>
@@ -516,7 +515,6 @@ export default function TransportsSection() {
                               ) : (
                                 <span className="text-[var(--text-muted)]">—</span>
                               )}
-                              <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
                               <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
                             </div>
                           </td>

@@ -200,6 +200,7 @@ export const habits = sqliteTable("habits", {
   category: text("category").notNull(), // 'work' | 'health' | 'relationships' | 'hobbies' | 'lifestyle'
   valueType: text("value_type").notNull(), // 'binary' | 'scaled' | 'count'
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at")
     .notNull()
     .default(sql`(unixepoch())`),

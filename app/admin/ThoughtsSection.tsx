@@ -223,7 +223,6 @@ export default function ThoughtsSection() {
                       <td className="py-2 pr-4 text-[var(--text)] max-w-md">{t.thought}</td>
                       <td className="py-2" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-2">
-                          <button onClick={() => startEdit(t)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
                           <button onClick={() => handleDelete(t.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
                         </div>
                       </td>

@@ -2,8 +2,8 @@ import Image from "next/image";
 import Nav from "@/components/Nav";
 import ProjectCard from "@/components/ProjectCard";
 import { db } from "@/lib/db";
-import { sets, padelSets, transports } from "@/lib/schema";
-import { and, count, eq, sql } from "drizzle-orm";
+import { sets, padelSets, transports, habitEntries } from "@/lib/schema";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { Dumbbell } from "lucide-react";
 import { getContentStream } from "@/lib/content-stream";
 import type { ContentItem } from "@/lib/content-stream";
@@ -114,33 +114,53 @@ function daysSince(dateStr: string | null): string {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function Home() {
-  const [stream, [gymStats], [padelStats], [ebikeStats]] = await Promise.all([
-    getContentStream(),
-    db
-      .select({
-        totalSets: count(),
-        latestDate: sql<
-          string | null
-        >`MAX(CASE WHEN ${sets.actual} IS NOT NULL THEN ${sets.date} END)`,
-      })
-      .from(sets),
-    db
-      .select({
-        totalSets: count(),
-        latestDate: sql<string | null>`MAX(${padelSets.date})`,
-        totalWins: sql<number>`SUM(CASE WHEN ${padelSets.gamesWon} > ${padelSets.gamesLost} THEN 1 ELSE 0 END)`,
-      })
-      .from(padelSets),
-    db
-      .select({
-        totalTrips: count(),
-        latestDate: sql<string | null>`MAX(${transports.date})`,
-      })
-      .from(transports)
-      .where(
-        and(eq(transports.eventType, "trip"), eq(transports.mode, "ebike")),
-      ),
-  ]);
+  const [stream, [gymStats], [padelStats], [ebikeStats], milkTeaEntries] =
+    await Promise.all([
+      getContentStream(),
+      db
+        .select({
+          totalSets: count(),
+          latestDate: sql<
+            string | null
+          >`MAX(CASE WHEN ${sets.actual} IS NOT NULL THEN ${sets.date} END)`,
+        })
+        .from(sets),
+      db
+        .select({
+          totalSets: count(),
+          latestDate: sql<string | null>`MAX(${padelSets.date})`,
+          totalWins: sql<number>`SUM(CASE WHEN ${padelSets.gamesWon} > ${padelSets.gamesLost} THEN 1 ELSE 0 END)`,
+        })
+        .from(padelSets),
+      db
+        .select({
+          totalTrips: count(),
+          latestDate: sql<string | null>`MAX(${transports.date})`,
+        })
+        .from(transports)
+        .where(
+          and(eq(transports.eventType, "trip"), eq(transports.mode, "ebike")),
+        ),
+      db
+        .select({ date: habitEntries.date, count: habitEntries.numericValue })
+        .from(habitEntries)
+        .where(eq(habitEntries.habitId, 14))
+        .orderBy(desc(habitEntries.date))
+        .limit(21),
+    ]);
+
+  const todayStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+  }).format(new Date());
+  const [ty, tm, td] = todayStr.split("-").map(Number);
+  const milkTeaMap = new Map(
+    milkTeaEntries.map((e) => [e.date, Math.round(e.count ?? 0)]),
+  );
+  const milkTeaDays = Array.from({ length: 21 }, (_, i) => {
+    const d = new Date(ty, tm - 1, td - (20 - i));
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return { date: dateStr, count: milkTeaMap.get(dateStr) ?? 0 };
+  });
 
   return (
     <>
@@ -415,6 +435,56 @@ export default async function Home() {
                 View log →
               </a>
             </div>
+          </div>
+
+          {/* Milk Tea habit strip */}
+          <div className="mt-6 rounded-[20px] bg-surface border border-border px-6 py-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-mono text-muted uppercase tracking-widest">
+                Milk Tea · last 21 days · 0% Sugar, Less Ice
+              </p>
+              <a href="/journal/habits" className="text-xs text-muted font-mono opacity-40 hover:opacity-70 transition-opacity select-none">
+                habits →
+              </a>
+            </div>
+            <div id="milktea-scroll" className="overflow-x-auto">
+              <div className="flex gap-1.5 min-w-max">
+                {milkTeaDays.map(({ date, count }) => {
+                  const day = date.slice(8);
+                  const intensity = count === 0 ? 0 : Math.min(count / 4, 1);
+                  const bgColor =
+                    count === 0
+                      ? "#EFE8DF"
+                      : `rgba(139, 108, 97, ${intensity})`;
+                  const showNumber = count >= 2;
+                  const lightText = intensity < 0.65;
+                  return (
+                    <div
+                      key={date}
+                      className="flex flex-col items-center gap-1.5 w-7"
+                    >
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: bgColor }}
+                      >
+                        {showNumber && (
+                          <span
+                            className="text-[9px] font-bold font-mono leading-none"
+                            style={{ color: lightText ? "#8B6C61" : "white" }}
+                          >
+                            {count}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-muted font-mono">
+                        {day}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <script dangerouslySetInnerHTML={{ __html: `document.getElementById('milktea-scroll').scrollLeft=99999` }} />
           </div>
         </section>
 

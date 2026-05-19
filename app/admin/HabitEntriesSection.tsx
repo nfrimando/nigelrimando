@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Habit, HabitEntry } from "@/lib/schema";
 
 function Spinner({ light }: { light?: boolean }) {
@@ -260,6 +260,22 @@ export default function HabitEntriesSection() {
       setLogStep((s) => s + 1);
     }
   }
+
+  const advanceStepRef = useRef(advanceStep);
+  advanceStepRef.current = advanceStep;
+
+  useEffect(() => {
+    if (!showLogModal || !currentHabit) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Enter") return;
+      if ((e.target as HTMLElement).tagName === "BUTTON") return;
+      if (logLoading) return;
+      e.preventDefault();
+      advanceStepRef.current(true);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showLogModal, currentHabit, logLoading]);
 
   async function submitLog(finalValues: Record<number, LogForm>) {
     const entries = Object.entries(finalValues).map(([habitId, vals]) => ({
