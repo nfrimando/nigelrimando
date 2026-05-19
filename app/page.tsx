@@ -20,24 +20,15 @@ function Divider() {
   return <div className="border-t border-border" />;
 }
 
-function formatDate(dateStr: string | null): string {
+function daysSince(dateStr: string | null): string {
   if (!dateStr) return "—";
-  const [year, month, day] = dateStr.split("-").map(Number);
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  return `${months[month - 1]} ${day}, ${year}`;
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
+  const [ty, tm, td] = today.split("-").map(Number);
+  const [ry, rm, rd] = dateStr.split("-").map(Number);
+  const todayMs = new Date(ty, tm - 1, td).getTime();
+  const recordMs = new Date(ry, rm - 1, rd).getTime();
+  const diff = Math.round((todayMs - recordMs) / 86400000);
+  return diff === 0 ? "today" : `${diff}d`;
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -182,9 +173,9 @@ export default async function Home() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold font-heading text-text leading-none">
-                    {formatDate(gymStats?.latestDate ?? null)}
+                    {daysSince(gymStats?.latestDate ?? null)}
                   </p>
-                  <p className="text-xs text-muted mt-1">last gym day</p>
+                  <p className="text-xs text-muted mt-1">since last gym</p>
                 </div>
               </div>
               <a
@@ -278,9 +269,9 @@ export default async function Home() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold font-heading text-text leading-none">
-                    {formatDate(padelStats?.latestDate ?? null)}
+                    {daysSince(padelStats?.latestDate ?? null)}
                   </p>
-                  <p className="text-xs text-muted mt-1">last match</p>
+                  <p className="text-xs text-muted mt-1">since last match</p>
                 </div>
               </div>
               <a
@@ -331,9 +322,9 @@ export default async function Home() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold font-heading text-text leading-none">
-                    {formatDate(ebikeStats?.latestDate ?? null)}
+                    {daysSince(ebikeStats?.latestDate ?? null)}
                   </p>
-                  <p className="text-xs text-muted mt-1">last ride</p>
+                  <p className="text-xs text-muted mt-1">since last ride</p>
                 </div>
               </div>
               <a
