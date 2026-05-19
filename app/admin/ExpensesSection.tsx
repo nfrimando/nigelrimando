@@ -427,7 +427,47 @@ export default function ExpensesSection() {
           <p className="text-sm text-[var(--text-muted)]">No expense entries found.</p>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Mobile card list */}
+            <div className="sm:hidden flex flex-col divide-y divide-[var(--border)]">
+              {data.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
+                ({ els, lastDate }, row, i) => {
+                  if (row.date !== lastDate) {
+                    els.push(
+                      <div key={`date-${row.date}-${i}`} className="py-2 px-1 bg-[var(--surface-alt)]">
+                        <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{row.date}</span>
+                      </div>
+                    );
+                  }
+                  els.push(
+                    <div key={row.id} className="py-3" onClick={() => startEdit(row)}>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-medium text-sm text-[var(--text)] truncate">{row.item}</span>
+                        <span className="font-mono font-bold text-sm text-[var(--text)] shrink-0">
+                          ₱{row.amount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[var(--text-muted)] mb-2">
+                        <span>
+                          {row.category}
+                          {row.subcategory && <span> / {row.subcategory}</span>}
+                        </span>
+                        {row.shop && <span>{row.shop}</span>}
+                        {row.notes && <span className="italic">{row.notes}</span>}
+                      </div>
+                      <div className="flex justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
+                        <button onClick={() => handleDelete(row.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Del</button>
+                      </div>
+                    </div>
+                  );
+                  return { els, lastDate: row.date };
+                },
+                { els: [], lastDate: null }
+              ).els}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
@@ -441,32 +481,48 @@ export default function ExpensesSection() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map((row) => (
-                    <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors" onClick={() => startEdit(row)}>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.date}</td>
-                      <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">
-                        {row.category}
-                        {row.subcategory && (
-                          <span className="text-[var(--text-muted)]"> / {row.subcategory}</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-4 text-[var(--text)]">{row.item}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap">{row.shop ?? "—"}</td>
-                      <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap font-mono text-xs text-right">
-                        ₱{row.amount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] max-w-xs">{row.notes ?? "—"}</td>
-                      <td className="py-2" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2 items-center">
-                          <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
-                          <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {data.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
+                    ({ els, lastDate }, row, i) => {
+                      if (row.date !== lastDate) {
+                        els.push(
+                          <tr key={`date-${row.date}-${i}`} className="bg-[var(--surface-alt)]">
+                            <td colSpan={7} className="py-1.5 px-3">
+                              <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{row.date}</span>
+                            </td>
+                          </tr>
+                        );
+                      }
+                      els.push(
+                        <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors" onClick={() => startEdit(row)}>
+                          <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.date}</td>
+                          <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">
+                            {row.category}
+                            {row.subcategory && (
+                              <span className="text-[var(--text-muted)]"> / {row.subcategory}</span>
+                            )}
+                          </td>
+                          <td className="py-2 pr-4 text-[var(--text)]">{row.item}</td>
+                          <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap">{row.shop ?? "—"}</td>
+                          <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap font-mono text-xs text-right">
+                            ₱{row.amount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-2 pr-4 text-[var(--text-muted)] max-w-xs">{row.notes ?? "—"}</td>
+                          <td className="py-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex gap-2 items-center">
+                              <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
+                              <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                      return { els, lastDate: row.date };
+                    },
+                    { els: [], lastDate: null }
+                  ).els}
                 </tbody>
               </table>
             </div>
+
             {totalPages > 1 && (
               <div className="flex items-center gap-4 mt-4">
                 <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">

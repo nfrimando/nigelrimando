@@ -77,6 +77,7 @@ export const padelSets = sqliteTable(
     venue: text("venue"),
     courtNumber: text("court_number"),
     videoUrl: text("video_url"),
+    notes: text("notes"),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`(unixepoch())`),

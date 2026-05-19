@@ -61,6 +61,32 @@ const submitClass =
 const cancelClass =
   "px-4 py-2 rounded-[14px] bg-[var(--surface-alt)] text-[var(--text-muted)] text-sm font-medium hover:text-[var(--text)] transition-colors";
 
+function NoteTooltip({ note }: { note: string }) {
+  return (
+    <span className="relative group inline-flex items-center">
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors cursor-default"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+      </svg>
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 px-2.5 py-1.5 rounded-xl bg-[var(--text)] text-white text-xs leading-snug opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-30 whitespace-pre-wrap break-words shadow-lg">
+        {note}
+      </span>
+    </span>
+  );
+}
+
 function PersonCombobox({
   value,
   onChange,
@@ -154,6 +180,7 @@ type EditForm = {
   format: string;
   courtNumber: string;
   videoUrl: string;
+  notes: string;
 };
 
 export default function PadelSetsSection() {
@@ -178,7 +205,7 @@ export default function PadelSetsSection() {
     format: "",
     courtNumber: "",
   });
-  const [setScore, setSetScore] = useState({ gamesWon: "", gamesLost: "", videoUrl: "" });
+  const [setScore, setSetScore] = useState({ gamesWon: "", gamesLost: "", videoUrl: "", notes: "" });
   const [addError, setAddError] = useState("");
   const [addLoading, setAddLoading] = useState(false);
 
@@ -198,6 +225,7 @@ export default function PadelSetsSection() {
     format: "",
     courtNumber: "",
     videoUrl: "",
+    notes: "",
   });
   const [editLoading, setEditLoading] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -278,7 +306,7 @@ export default function PadelSetsSection() {
       format: "",
       courtNumber: "",
     });
-    setSetScore({ gamesWon: "", gamesLost: "", videoUrl: "" });
+    setSetScore({ gamesWon: "", gamesLost: "", videoUrl: "", notes: "" });
     const res = await fetch("/api/admin/padel-sets/next-match-id");
     const json = await res.json();
     setCurrentMatchId(json.nextMatchId);
@@ -322,6 +350,7 @@ export default function PadelSetsSection() {
           format: matchForm.format || null,
           courtNumber: matchForm.courtNumber || null,
           videoUrl: setScore.videoUrl || null,
+          notes: setScore.notes || null,
         }),
       });
       if (!res.ok) {
@@ -330,7 +359,7 @@ export default function PadelSetsSection() {
         return;
       }
       setCurrentSetNumber((n) => n + 1);
-      setSetScore({ gamesWon: "", gamesLost: "", videoUrl: "" });
+      setSetScore({ gamesWon: "", gamesLost: "", videoUrl: "", notes: "" });
       setAddPhase("set");
       fetchRows(1, search);
       setPage(1);
@@ -359,6 +388,7 @@ export default function PadelSetsSection() {
       format: row.format ?? "",
       courtNumber: row.courtNumber ?? "",
       videoUrl: row.videoUrl ?? "",
+      notes: row.notes ?? "",
     });
     setShowEditModal(true);
   }
@@ -380,6 +410,7 @@ export default function PadelSetsSection() {
       format: editForm.format || null,
       courtNumber: editForm.courtNumber || null,
       videoUrl: editForm.videoUrl || null,
+      notes: editForm.notes || null,
     };
     setRows((prev) => prev.map((r) => (r.id === id ? optimistic : r)));
     setEditingId(null);
@@ -403,6 +434,7 @@ export default function PadelSetsSection() {
           format: editForm.format,
           courtNumber: editForm.courtNumber,
           videoUrl: editForm.videoUrl,
+          notes: editForm.notes,
         }),
       });
       if (res.ok) {
@@ -448,85 +480,141 @@ export default function PadelSetsSection() {
       ) : rows.length === 0 ? (
         <p className="text-sm text-[var(--text-muted)]">No padel sets found.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-[var(--text-muted)] border-b border-[var(--border)]">
-                <th className="pb-2 pr-3">Match</th>
-                <th className="pb-2 pr-3">Set</th>
-                <th className="pb-2 pr-3">Date</th>
-                <th className="pb-2 pr-3">TM L</th>
-                <th className="pb-2 pr-3">TM R</th>
-                <th className="pb-2 pr-3">OPP L</th>
-                <th className="pb-2 pr-3">OPP R</th>
-                <th className="pb-2 pr-3">Won</th>
-                <th className="pb-2 pr-3">Lost</th>
-                <th className="pb-2 pr-3">Venue</th>
-                <th className="pb-2 pr-3">Court</th>
-                <th className="pb-2 pr-3">Video</th>
-                <th className="pb-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-[var(--border)] hover:bg-[var(--surface-alt)] transition-colors cursor-pointer"
-                  onClick={() => startEdit(row)}
-                >
-                  <td className="py-2 pr-3 text-[var(--text-muted)]">
-                    {row.matchId}
-                  </td>
-                  <td className="py-2 pr-3">{row.setNumber}</td>
-                  <td className="py-2 pr-3">{row.date}</td>
-                  <td className="py-2 pr-3">{personDisplay(row.teammateLeft)}</td>
-                  <td className="py-2 pr-3">{personDisplay(row.teammateRight)}</td>
-                  <td className="py-2 pr-3">{personDisplay(row.opponentLeft)}</td>
-                  <td className="py-2 pr-3">{personDisplay(row.opponentRight)}</td>
-                  <td className="py-2 pr-3 font-mono">{row.gamesWon}</td>
-                  <td className="py-2 pr-3 font-mono">{row.gamesLost}</td>
-                  <td className="py-2 pr-3 text-[var(--text-muted)]">
-                    {row.venue ?? "—"}
-                  </td>
-                  <td className="py-2 pr-3 text-[var(--text-muted)]">
-                    {row.courtNumber ?? "—"}
-                  </td>
-                  <td className="py-2 pr-3" onClick={(e) => e.stopPropagation()}>
-                    {row.videoUrl ? (
-                      <a
-                        href={row.videoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#FF0000] hover:opacity-70 transition-opacity"
-                        title="Watch video"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                        </svg>
-                      </a>
-                    ) : (
-                      <span className="text-[var(--text-muted)]">—</span>
-                    )}
-                  </td>
-                  <td className="py-2 flex gap-1" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => startEdit(row)}
-                      className="text-xs text-[var(--accent)] hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(row.id)}
-                      className="text-xs text-[var(--warm)] hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </td>
+        <>
+          {/* Mobile card list */}
+          <div className="sm:hidden flex flex-col divide-y divide-[var(--border)]">
+            {rows.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
+              ({ els, lastDate }, row, i) => {
+                if (row.date !== lastDate) {
+                  els.push(
+                    <div key={`date-${row.date}-${i}`} className="py-2 px-1 bg-[var(--surface-alt)]">
+                      <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{row.date}</span>
+                    </div>
+                  );
+                }
+                const won = row.gamesWon > row.gamesLost;
+                const lost = row.gamesWon < row.gamesLost;
+                els.push(
+                  <div key={row.id} className="py-3">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs text-[var(--text-muted)]">
+                        Match {row.matchId} · Set {row.setNumber}
+                        {row.venue ? ` · ${row.venue}` : ""}
+                        {row.courtNumber ? ` · ${row.courtNumber}` : ""}
+                      </span>
+                      <span className={`font-mono font-bold text-sm shrink-0 ${won ? "text-[var(--success)]" : lost ? "text-[var(--warm)]" : "text-[var(--text-muted)]"}`}>
+                        {row.gamesWon}–{row.gamesLost}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-1 gap-y-0.5 text-xs text-[var(--text-muted)] mb-2 items-center">
+                      <span className="flex items-center gap-1">{personDisplay(row.teammateLeft)}</span>
+                      <span>/</span>
+                      <span className="flex items-center gap-1">{personDisplay(row.teammateRight)}</span>
+                      <span className="mx-1">vs</span>
+                      <span className="flex items-center gap-1">{personDisplay(row.opponentLeft)}</span>
+                      <span>/</span>
+                      <span className="flex items-center gap-1">{personDisplay(row.opponentRight)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {row.videoUrl ? (
+                          <a href={row.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[#FF0000] hover:opacity-70 transition-opacity" title="Watch video">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                            </svg>
+                          </a>
+                        ) : null}
+                        {row.notes ? <NoteTooltip note={row.notes} /> : null}
+                      </div>
+                      <div className="flex gap-3">
+                        <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
+                        <button onClick={() => handleDelete(row.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Del</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+                return { els, lastDate: row.date };
+              },
+              { els: [], lastDate: null }
+            ).els}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wide text-[var(--text-muted)] border-b border-[var(--border)]">
+                  <th className="pb-2 pr-3">Match</th>
+                  <th className="pb-2 pr-3">Set</th>
+                  <th className="pb-2 pr-3">Date</th>
+                  <th className="pb-2 pr-3">TM L</th>
+                  <th className="pb-2 pr-3">TM R</th>
+                  <th className="pb-2 pr-3">OPP L</th>
+                  <th className="pb-2 pr-3">OPP R</th>
+                  <th className="pb-2 pr-3">Won</th>
+                  <th className="pb-2 pr-3">Lost</th>
+                  <th className="pb-2 pr-3">Venue</th>
+                  <th className="pb-2 pr-3">Court</th>
+                  <th className="pb-2 pr-3">Video</th>
+                  <th className="pb-2"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
+                  ({ els, lastDate }, row, i) => {
+                    if (row.date !== lastDate) {
+                      els.push(
+                        <tr key={`date-${row.date}-${i}`} className="bg-[var(--surface-alt)]">
+                          <td colSpan={13} className="py-1.5 px-3">
+                            <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{row.date}</span>
+                          </td>
+                        </tr>
+                      );
+                    }
+                    els.push(
+                      <tr
+                        key={row.id}
+                        className="border-b border-[var(--border)] hover:bg-[var(--surface-alt)] transition-colors cursor-pointer"
+                        onClick={() => startEdit(row)}
+                      >
+                        <td className="py-2 pr-3 text-[var(--text-muted)]">{row.matchId}</td>
+                        <td className="py-2 pr-3">{row.setNumber}</td>
+                        <td className="py-2 pr-3">{row.date}</td>
+                        <td className="py-2 pr-3">{personDisplay(row.teammateLeft)}</td>
+                        <td className="py-2 pr-3">{personDisplay(row.teammateRight)}</td>
+                        <td className="py-2 pr-3">{personDisplay(row.opponentLeft)}</td>
+                        <td className="py-2 pr-3">{personDisplay(row.opponentRight)}</td>
+                        <td className="py-2 pr-3 font-mono">{row.gamesWon}</td>
+                        <td className="py-2 pr-3 font-mono">{row.gamesLost}</td>
+                        <td className="py-2 pr-3 text-[var(--text-muted)]">{row.venue ?? "—"}</td>
+                        <td className="py-2 pr-3 text-[var(--text-muted)]">{row.courtNumber ?? "—"}</td>
+                        <td className="py-2 pr-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1.5">
+                            {row.videoUrl ? (
+                              <a href={row.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[#FF0000] hover:opacity-70 transition-opacity" title="Watch video">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                </svg>
+                              </a>
+                            ) : null}
+                            {row.notes ? <NoteTooltip note={row.notes} /> : null}
+                            {!row.videoUrl && !row.notes && <span className="text-[var(--text-muted)]">—</span>}
+                          </div>
+                        </td>
+                        <td className="py-2 flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
+                          <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
+                        </td>
+                      </tr>
+                    );
+                    return { els, lastDate: row.date };
+                  },
+                  { els: [], lastDate: null }
+                ).els}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {totalPages > 1 && (
@@ -683,6 +771,17 @@ export default function PadelSetsSection() {
                   placeholder="https://youtube.com/watch?v=..."
                   value={editForm.videoUrl}
                   onChange={(e) => setEditForm((f) => ({ ...f, videoUrl: e.target.value }))}
+                />
+              </Field>
+            </div>
+            <div className="col-span-2">
+              <Field label="Notes (optional)">
+                <textarea
+                  className={inputClass + " resize-none"}
+                  rows={2}
+                  placeholder="e.g. wind was strong, tried new serve…"
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
                 />
               </Field>
             </div>
@@ -871,6 +970,20 @@ export default function PadelSetsSection() {
                   value={setScore.videoUrl}
                   onChange={(e) =>
                     setSetScore((s) => ({ ...s, videoUrl: e.target.value }))
+                  }
+                />
+              </Field>
+            </div>
+
+            <div className="col-span-2">
+              <Field label="Notes (optional)">
+                <textarea
+                  className={inputClass + " resize-none"}
+                  rows={2}
+                  placeholder="e.g. wind was strong, tried new serve…"
+                  value={setScore.notes}
+                  onChange={(e) =>
+                    setSetScore((s) => ({ ...s, notes: e.target.value }))
                   }
                 />
               </Field>

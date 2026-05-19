@@ -24,6 +24,7 @@ export default function ExercisesSection() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -57,6 +58,38 @@ export default function ExercisesSection() {
     } else {
       const data = await res.json();
       setError(data.error || "Failed to add exercise.");
+    }
+  }
+
+  function openEdit(ex: Exercise) {
+    setEditingExercise(ex);
+    setForm({
+      name: ex.name,
+      type: ex.type,
+      primaryTarget: ex.primaryTarget,
+      secondaryTarget: ex.secondaryTarget ?? "",
+    });
+    setError("");
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingExercise) return;
+    setError("");
+    setLoading(true);
+    const res = await fetch(`/api/admin/exercises/${editingExercise.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    setLoading(false);
+    if (res.ok) {
+      const updated: Exercise = await res.json();
+      setExercises((prev) => prev.map((ex) => (ex.id === updated.id ? updated : ex)));
+      setEditingExercise(null);
+    } else {
+      const data = await res.json();
+      setError(data.error || "Failed to update exercise.");
     }
   }
 
@@ -117,7 +150,10 @@ export default function ExercisesSection() {
                     <td className="py-2 pr-4 text-[var(--text-muted)]">{ex.primaryTarget}</td>
                     <td className="py-2 pr-4 text-[var(--text-muted)]">{ex.secondaryTarget ?? "—"}</td>
                     <td className="py-2">
-                      <button onClick={() => handleDelete(ex.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => openEdit(ex)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
+                        <button onClick={() => handleDelete(ex.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -126,6 +162,38 @@ export default function ExercisesSection() {
           </div>
         )}
       </section>
+
+      {/* Edit Exercise Modal */}
+      {editingExercise && (
+        <Modal title="Edit exercise" onClose={() => setEditingExercise(null)}>
+          <form onSubmit={handleEdit} className="flex flex-col gap-4 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Name">
+                <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required placeholder="e.g. Squat" className={inputClass} />
+              </Field>
+              <Field label="Type">
+                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputClass}>
+                  {EXERCISE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </Field>
+              <Field label="Primary Target">
+                <input type="text" value={form.primaryTarget} onChange={(e) => setForm({ ...form, primaryTarget: e.target.value })} required placeholder="e.g. Quads" className={inputClass} />
+              </Field>
+              <Field label="Secondary Target (optional)">
+                <input type="text" value={form.secondaryTarget} onChange={(e) => setForm({ ...form, secondaryTarget: e.target.value })} placeholder="e.g. Glutes" className={inputClass} />
+              </Field>
+            </div>
+            {error && <p className="text-sm text-red-500">{error}</p>}
+            <div className="flex gap-3 pt-2">
+              <button type="submit" disabled={loading} className={`${submitClass} inline-flex items-center gap-2`}>
+                {loading && <Spinner light />}
+                {loading ? "Saving…" : "Save changes"}
+              </button>
+              <button type="button" onClick={() => setEditingExercise(null)} className={cancelClass}>Cancel</button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* Add Exercise Modal */}
       {showAddModal && (

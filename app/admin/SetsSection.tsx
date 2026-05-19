@@ -49,19 +49,6 @@ export default function SetsSection() {
   const [editForm, setEditForm] = useState<Partial<typeof defaultForm>>({});
   const [saveError, setSaveError] = useState("");
 
-  // Selection state
-  const [selectedIds, setSelectedIds] = useState<globalThis.Set<number>>(new globalThis.Set());
-
-  // Bulk edit modal
-  const [showBulkEdit, setShowBulkEdit] = useState(false);
-  const [bulkForm, setBulkForm] = useState({ block: "", week: "", date: "" });
-  const [bulkLoading, setBulkLoading] = useState(false);
-
-  // Copy modal (bulk)
-  const [showCopyModal, setShowCopyModal] = useState(false);
-  const [copyDate, setCopyDate] = useState(today);
-  const [copyLoading, setCopyLoading] = useState(false);
-
   // Row copy modal
   const [showRowCopyModal, setShowRowCopyModal] = useState(false);
   const [rowCopyTarget, setRowCopyTarget] = useState<SetRow | null>(null);
@@ -69,6 +56,8 @@ export default function SetsSection() {
   const [rowCopyBlock, setRowCopyBlock] = useState("");
   const [rowCopyWeek, setRowCopyWeek] = useState("1");
   const [rowCopyPlanned, setRowCopyPlanned] = useState("");
+  const [rowCopyValue, setRowCopyValue] = useState("");
+  const [rowCopyMeasure, setRowCopyMeasure] = useState("kg");
   const [rowCopyLoading, setRowCopyLoading] = useState(false);
 
   // Dupe loading
@@ -89,7 +78,6 @@ export default function SetsSection() {
   }
 
   const exerciseMap = Object.fromEntries(exercises.map((e) => [e.id, e.name]));
-  const anySelected = selectedIds.size > 0;
 
   async function fetchExercises() {
     const res = await fetch("/api/admin/exercises");
@@ -160,11 +148,6 @@ export default function SetsSection() {
     if (!confirm("Delete this set? This cannot be undone.")) return;
     await fetch(`/api/admin/sets/${id}`, { method: "DELETE" });
     setSets((prev: SetRow[]) => prev.filter((s) => s.id !== id));
-    setSelectedIds((prev: globalThis.Set<number>) => {
-      const next = new globalThis.Set(prev);
-      next.delete(id);
-      return next;
-    });
     setTotal((t) => t - 1);
   }
 
@@ -216,57 +199,14 @@ export default function SetsSection() {
     }
   }
 
-  function toggleSelect(id: number) {
-    setSelectedIds((prev: globalThis.Set<number>) => {
-      const next = new globalThis.Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleSelectAll() {
-    if (sets.every((s) => selectedIds.has(s.id))) {
-      setSelectedIds((prev: globalThis.Set<number>) => {
-        const next = new globalThis.Set(prev);
-        sets.forEach((s) => next.delete(s.id));
-        return next;
-      });
-    } else {
-      setSelectedIds((prev: globalThis.Set<number>) => {
-        const next = new globalThis.Set(prev);
-        sets.forEach((s) => next.add(s.id));
-        return next;
-      });
-    }
-  }
-
-  async function handleBulkEdit() {
-    const fields: Record<string, string | number> = {};
-    if (bulkForm.block) fields.block = bulkForm.block;
-    if (bulkForm.week) fields.week = Number(bulkForm.week);
-    if (bulkForm.date) fields.date = bulkForm.date;
-    if (Object.keys(fields).length === 0) return;
-
-    setBulkLoading(true);
-    await fetch("/api/admin/sets", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: Array.from(selectedIds), ...fields }),
-    });
-    setBulkLoading(false);
-    setShowBulkEdit(false);
-    setBulkForm({ block: "", week: "", date: "" });
-    setSelectedIds(new globalThis.Set());
-    fetchSets(page, search);
-  }
-
   function openRowCopy(s: SetRow) {
     setRowCopyTarget(s);
     setRowCopyDate(today);
     setRowCopyBlock(s.block);
     setRowCopyWeek(String((s.week ?? 0) + 1));
     setRowCopyPlanned(s.planned != null ? String(s.planned) : "");
+    setRowCopyValue(s.value != null ? String(s.value) : "");
+    setRowCopyMeasure(s.measure ?? "kg");
     setShowRowCopyModal(true);
   }
 
@@ -282,8 +222,8 @@ export default function SetsSection() {
         block: rowCopyBlock,
         week: rowCopyWeek,
         exerciseId: s.exerciseId,
-        measure: s.measure,
-        value: s.value,
+        measure: rowCopyMeasure,
+        value: rowCopyValue !== "" ? rowCopyValue : null,
         planned: rowCopyPlanned !== "" ? rowCopyPlanned : null,
         actual: null,
         notes: s.notes,
@@ -342,38 +282,6 @@ export default function SetsSection() {
     showToast("Set logged.");
   }
 
-  async function handleCopyAsPlanned() {
-    setCopyLoading(true);
-    const selected = sets.filter((s) => selectedIds.has(s.id));
-    await Promise.all(
-      selected.map((s) =>
-        fetch("/api/admin/sets", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            date: copyDate,
-            block: s.block,
-            week: s.week,
-            exerciseId: s.exerciseId,
-            measure: s.measure,
-            value: s.value,
-            planned: s.planned,
-            actual: null,
-            notes: s.notes,
-          }),
-        })
-      )
-    );
-    setCopyLoading(false);
-    setShowCopyModal(false);
-    setSelectedIds(new globalThis.Set());
-    fetchSets(1, search);
-    setPage(1);
-    showToast(`${selected.length} set${selected.length !== 1 ? "s" : ""} copied as planned.`);
-  }
-
-  const allPageSelected = sets.length > 0 && sets.every((s) => selectedIds.has(s.id));
-
   return (
     <div className="flex flex-col gap-6">
       {/* Sets Table */}
@@ -401,107 +309,157 @@ export default function SetsSection() {
           </div>
         </div>
 
-        {/* Always-visible action bar */}
-        <div className="flex flex-wrap items-center gap-3 mb-4 px-3 py-2 rounded-[14px] bg-[var(--surface-alt)] border border-[var(--border)]">
-          <span className="text-sm text-[var(--text-muted)] min-w-[80px]">
-            {anySelected ? `${selectedIds.size} selected` : "0 selected"}
-          </span>
-          <button
-            onClick={() => setShowCopyModal(true)}
-            disabled={!anySelected}
-            className={actionBtnClass}
-          >
-            Copy as planned
-          </button>
-          <button
-            onClick={() => setShowBulkEdit(true)}
-            disabled={!anySelected}
-            className={actionBtnClass}
-          >
-            Bulk edit
-          </button>
-          {anySelected && (
-            <button
-              onClick={() => setSelectedIds(new globalThis.Set())}
-              className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] ml-auto transition-colors"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
         {sets.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)]">No sets found.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
-                  <th className="pb-2 pr-3">
-                    <input type="checkbox" checked={allPageSelected} onChange={toggleSelectAll} className="accent-[var(--accent)]" />
-                  </th>
-                  <th className="pb-2 pr-4 font-medium">Date</th>
-                  <th className="pb-2 pr-4 font-medium">Exercise</th>
-                  <th className="pb-2 pr-4 font-medium">Block</th>
-                  <th className="pb-2 pr-4 font-medium">Wk</th>
-                  <th className="pb-2 pr-4 font-medium">Value</th>
-                  <th className="pb-2 pr-4 font-medium">Planned</th>
-                  <th className="pb-2 pr-4 font-medium">Actual</th>
-                  <th className="pb-2 pr-4 font-medium">Notes</th>
-                  <th className="pb-2 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {sets.map((s) => {
-                  const isPlanned = s.actual == null;
-                  const rowBase = isPlanned
-                    ? "border-b border-[var(--border)] last:border-0 bg-[var(--surface-alt)] italic"
-                    : "border-b border-[var(--border)] last:border-0";
+          <>
+            {/* Mobile card list */}
+            <div className="sm:hidden flex flex-col divide-y divide-[var(--border)]">
+              {sets.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
+                ({ els, lastDate }, s, i) => {
+                  if (s.date !== lastDate) {
+                    els.push(
+                      <div key={`date-${s.date}-${i}`} className="py-2 px-1 bg-[var(--surface-alt)]">
+                        <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{s.date}</span>
+                      </div>
+                    );
+                  }
 
-                  return (
-                    <tr key={s.id} className={`${rowBase} cursor-pointer`} onClick={() => startEdit(s)}>
-                      <td className="py-2 pr-3" onClick={(e) => e.stopPropagation()}>
-                        <input type="checkbox" checked={selectedIds.has(s.id)} onChange={() => toggleSelect(s.id)} className="accent-[var(--accent)]" />
-                      </td>
-                      <td className={`py-2 pr-4 ${isPlanned ? "text-[var(--text-muted)]" : "text-[var(--text)]"}`}>{s.date}</td>
-                      <td className={`py-2 pr-4 ${isPlanned ? "text-[var(--text-muted)]" : "text-[var(--text)]"}`}>{exerciseMap[s.exerciseId] ?? s.exerciseId}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)]">{s.block}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)]">{s.week}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)]">{s.value != null ? `${s.value} ${s.measure ?? ""}` : "—"}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)]">{s.planned ?? "—"}</td>
-                      <td className="py-2 pr-4" onClick={(e) => e.stopPropagation()}>
-                        {isPlanned ? (
-                          <button
-                            onClick={() => openLogSet(s)}
-                            className="inline-block px-2 py-0.5 rounded-full text-xs bg-[var(--warm)] text-white not-italic hover:opacity-75 transition-opacity"
-                          >
-                            Log
-                          </button>
-                        ) : (
-                          <span className="text-[var(--text-muted)]">{s.actual}</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)]">{s.notes ?? "—"}</td>
-                      <td className="py-2" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-3">
-                          <button onClick={() => startEdit(s)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
-                          <button onClick={() => openRowCopy(s)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Copy to…</button>
-                          <button
-                            onClick={() => handleDuplicate(s)}
-                            disabled={duplicatingId === s.id}
-                            className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors inline-flex items-center gap-1 disabled:opacity-50"
-                          >
-                            {duplicatingId === s.id ? <Spinner /> : "Dupe"}
-                          </button>
-                          <button onClick={() => handleDelete(s.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
+                  const isPlanned = s.actual == null;
+                  els.push(
+                  <div key={s.id} className="py-3">
+                    <div className="min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className={`font-medium text-sm truncate ${isPlanned ? "text-[var(--text-muted)] italic" : "text-[var(--text)]"}`}>
+                            {exerciseMap[s.exerciseId] ?? s.exerciseId}
+                          </span>
+                          <span className="text-xs text-[var(--text-muted)] shrink-0">{s.date}</span>
                         </div>
-                      </td>
-                    </tr>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[var(--text-muted)] mb-2">
+                          {s.block && <span>{s.block}</span>}
+                          <span>Wk {s.week}</span>
+                          {s.value != null && <span>{s.value} {s.measure ?? ""}</span>}
+                          {s.planned != null && <span>Planned: {s.planned}</span>}
+                          {s.notes && <span className="italic">{s.notes}</span>}
+                        </div>
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            {isPlanned ? (
+                              <button
+                                onClick={() => openLogSet(s)}
+                                className="px-3 py-1.5 rounded-[10px] text-xs font-medium bg-[var(--warm)] text-white hover:opacity-80 transition-opacity"
+                              >
+                                Log actual
+                              </button>
+                            ) : (
+                              <span className="text-xs text-[var(--text)] font-medium">Actual: {s.actual}</span>
+                            )}
+                          </div>
+                          <div className="flex gap-3">
+                            <button onClick={() => startEdit(s)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
+                            <button onClick={() => openRowCopy(s)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Copy</button>
+                            <button
+                              onClick={() => handleDuplicate(s)}
+                              disabled={duplicatingId === s.id}
+                              className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors inline-flex items-center gap-1 disabled:opacity-50"
+                            >
+                              {duplicatingId === s.id ? <Spinner /> : "Dupe"}
+                            </button>
+                            <button onClick={() => handleDelete(s.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Del</button>
+                          </div>
+                        </div>
+                    </div>
+                  </div>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
+
+                  return { els, lastDate: s.date };
+                },
+                { els: [], lastDate: null }
+              ).els}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
+                    <th className="pb-2 pr-4 font-medium">Date</th>
+                    <th className="pb-2 pr-4 font-medium">Exercise</th>
+                    <th className="pb-2 pr-4 font-medium">Block</th>
+                    <th className="pb-2 pr-4 font-medium">Wk</th>
+                    <th className="pb-2 pr-4 font-medium">Value</th>
+                    <th className="pb-2 pr-4 font-medium">Planned</th>
+                    <th className="pb-2 pr-4 font-medium">Actual</th>
+                    <th className="pb-2 pr-4 font-medium">Notes</th>
+                    <th className="pb-2 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sets.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
+                    ({ els, lastDate }, s, i) => {
+                      const isPlanned = s.actual == null;
+                      const rowBase = isPlanned
+                        ? "border-b border-[var(--border)] last:border-0 bg-[var(--surface-alt)] italic"
+                        : "border-b border-[var(--border)] last:border-0";
+
+                      if (s.date !== lastDate) {
+                        els.push(
+                          <tr key={`date-${s.date}-${i}`} className="bg-[var(--surface-alt)]">
+                            <td colSpan={9} className="py-1.5 px-3">
+                              <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">
+                                {s.date}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      els.push(
+                      <tr key={s.id} className={`${rowBase} cursor-pointer`} onClick={() => startEdit(s)}>
+                        <td className={`py-2 pr-4 ${isPlanned ? "text-[var(--text-muted)]" : "text-[var(--text)]"}`}>{s.date}</td>
+                        <td className={`py-2 pr-4 ${isPlanned ? "text-[var(--text-muted)]" : "text-[var(--text)]"}`}>{exerciseMap[s.exerciseId] ?? s.exerciseId}</td>
+                        <td className="py-2 pr-4 text-[var(--text-muted)]">{s.block}</td>
+                        <td className="py-2 pr-4 text-[var(--text-muted)]">{s.week}</td>
+                        <td className="py-2 pr-4 text-[var(--text-muted)]">{s.value != null ? `${s.value} ${s.measure ?? ""}` : "—"}</td>
+                        <td className="py-2 pr-4 text-[var(--text-muted)]">{s.planned ?? "—"}</td>
+                        <td className="py-2 pr-4" onClick={(e) => e.stopPropagation()}>
+                          {isPlanned ? (
+                            <button
+                              onClick={() => openLogSet(s)}
+                              className="inline-block px-2 py-0.5 rounded-full text-xs bg-[var(--warm)] text-white not-italic hover:opacity-75 transition-opacity"
+                            >
+                              Log
+                            </button>
+                          ) : (
+                            <span className="text-[var(--text-muted)]">{s.actual}</span>
+                          )}
+                        </td>
+                        <td className="py-2 pr-4 text-[var(--text-muted)]">{s.notes ?? "—"}</td>
+                        <td className="py-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex gap-3">
+                            <button onClick={() => startEdit(s)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
+                            <button onClick={() => openRowCopy(s)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Copy to…</button>
+                            <button
+                              onClick={() => handleDuplicate(s)}
+                              disabled={duplicatingId === s.id}
+                              className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors inline-flex items-center gap-1 disabled:opacity-50"
+                            >
+                              {duplicatingId === s.id ? <Spinner /> : "Dupe"}
+                            </button>
+                            <button onClick={() => handleDelete(s.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                      );
+
+                      return { els, lastDate: s.date };
+                    },
+                    { els: [], lastDate: null }
+                  ).els}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Pagination */}
@@ -616,31 +574,6 @@ export default function SetsSection() {
         </Modal>
       )}
 
-      {/* Bulk Edit Modal */}
-      {showBulkEdit && (
-        <Modal title={`Bulk edit ${selectedIds.size} sets`} onClose={() => setShowBulkEdit(false)}>
-          <p className="text-sm text-[var(--text-muted)] mb-4">Leave blank to keep existing value.</p>
-          <div className="flex flex-col gap-4">
-            <Field label="Block">
-              <input type="text" value={bulkForm.block} onChange={(e) => setBulkForm({ ...bulkForm, block: e.target.value })} placeholder="New block name" className={inputClass} />
-            </Field>
-            <Field label="Week">
-              <input type="number" value={bulkForm.week} onChange={(e) => setBulkForm({ ...bulkForm, week: e.target.value })} min={1} placeholder="New week" className={inputClass} />
-            </Field>
-            <Field label="Date">
-              <input type="date" value={bulkForm.date} onChange={(e) => setBulkForm({ ...bulkForm, date: e.target.value })} className={inputClass} />
-            </Field>
-          </div>
-          <div className="flex gap-3 mt-6">
-            <button onClick={handleBulkEdit} disabled={bulkLoading} className={`${submitClass} inline-flex items-center gap-2`}>
-              {bulkLoading && <Spinner light />}
-              {bulkLoading ? "Saving…" : "Apply changes"}
-            </button>
-            <button onClick={() => setShowBulkEdit(false)} className={cancelClass}>Cancel</button>
-          </div>
-        </Modal>
-      )}
-
       {/* Row Copy Modal */}
       {showRowCopyModal && rowCopyTarget && (
         <Modal title="Copy set as planned" onClose={() => setShowRowCopyModal(false)}>
@@ -656,6 +589,14 @@ export default function SetsSection() {
             </Field>
             <Field label="Week">
               <input type="number" value={rowCopyWeek} onChange={(e) => setRowCopyWeek(e.target.value)} min={1} className={inputClass} />
+            </Field>
+            <Field label="Measure">
+              <select value={rowCopyMeasure} onChange={(e) => setRowCopyMeasure(e.target.value)} className={inputClass}>
+                {MEASURES.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </Field>
+            <Field label="Value">
+              <input type="number" value={rowCopyValue} onChange={(e) => setRowCopyValue(e.target.value)} step="any" placeholder="e.g. 80" className={inputClass} />
             </Field>
             <Field label="Planned">
               <input type="number" value={rowCopyPlanned} onChange={(e) => setRowCopyPlanned(e.target.value)} step="any" placeholder="e.g. 5" className={inputClass} />
@@ -693,23 +634,6 @@ export default function SetsSection() {
               {logSetLoading ? "Saving…" : "Log set"}
             </button>
             <button onClick={() => setShowLogSetModal(false)} className={cancelClass}>Cancel</button>
-          </div>
-        </Modal>
-      )}
-
-      {/* Copy as Planned Modal */}
-      {showCopyModal && (
-        <Modal title={`Copy ${selectedIds.size} sets as planned`} onClose={() => setShowCopyModal(false)}>
-          <p className="text-sm text-[var(--text-muted)] mb-4">Creates copies without an actual value. Pick the date for the copies.</p>
-          <Field label="Date">
-            <input type="date" value={copyDate} onChange={(e) => setCopyDate(e.target.value)} className={inputClass} />
-          </Field>
-          <div className="flex gap-3 mt-6">
-            <button onClick={handleCopyAsPlanned} disabled={copyLoading} className={`${submitClass} inline-flex items-center gap-2`}>
-              {copyLoading && <Spinner light />}
-              {copyLoading ? "Copying…" : "Copy sets"}
-            </button>
-            <button onClick={() => setShowCopyModal(false)} className={cancelClass}>Cancel</button>
           </div>
         </Modal>
       )}
@@ -838,6 +762,3 @@ const submitClass =
 
 const cancelClass =
   "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200";
-
-const actionBtnClass =
-  "text-xs font-medium px-3 py-1.5 rounded-[10px] bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--accent)]";

@@ -408,78 +408,139 @@ export default function TransportsSection() {
           <p className="text-sm text-[var(--text-muted)]">No transport entries found.</p>
         ) : (
           <>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
-                  <th className="pb-2 pr-4 font-medium">Date</th>
-                  <th className="pb-2 pr-4 font-medium">Type</th>
-                  <th className="pb-2 pr-4 font-medium">Mode / Item</th>
-                  <th className="pb-2 pr-4 font-medium">From → To</th>
-                  <th className="pb-2 pr-4 font-medium">Time</th>
-                  <th className="pb-2 pr-4 font-medium">Notes</th>
-                  <th className="pb-2 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((row) => {
+            {/* Mobile card list */}
+            <div className="sm:hidden flex flex-col divide-y divide-[var(--border)]">
+              {data.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
+                ({ els, lastDate }, row, i) => {
+                  if (row.date !== lastDate) {
+                    els.push(
+                      <div key={`date-${row.date}-${i}`} className="py-2 px-1 bg-[var(--surface-alt)]">
+                        <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{row.date}</span>
+                      </div>
+                    );
+                  }
                   const dur = tripDuration(row.startTime, row.endTime);
-                  return (
-                    <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors" onClick={() => startEdit(row)}>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.date}</td>
-                      <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">{row.eventType}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap">
-                        {[row.mode, row.item].filter(Boolean).join(" / ") || "—"}
-                      </td>
-                      <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">
-                        {row.origin || row.destination
-                          ? `${row.origin ?? "?"} → ${row.destination ?? "?"}`
-                          : "—"}
-                      </td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">
-                        {row.startTime && row.endTime
-                          ? `${row.startTime}–${row.endTime}${dur ? ` (${dur})` : ""}`
-                          : row.startTime ?? "—"}
-                      </td>
-                      <td className="py-2 pr-4 text-[var(--text)] max-w-xs">{row.notes ?? "—"}</td>
-                      <td className="py-2" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2 items-center">
-                          {row.videoUrl ? (
-                            <a
-                              href={row.videoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[#FF0000] hover:opacity-70 transition-opacity"
-                              title="Watch video"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                              </svg>
-                            </a>
-                          ) : (
-                            <span className="text-[var(--text-muted)]">—</span>
-                          )}
-                          <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
-                          <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
+                  els.push(
+                    <div key={row.id} className="py-3" onClick={() => startEdit(row)}>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-medium text-sm text-[var(--text)]">{row.eventType}</span>
+                        {(row.origin || row.destination) && (
+                          <span className="text-xs text-[var(--text-muted)] shrink-0">{row.origin ?? "?"} → {row.destination ?? "?"}</span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[var(--text-muted)] mb-2">
+                        {[row.mode, row.item].filter(Boolean).length > 0 && (
+                          <span>{[row.mode, row.item].filter(Boolean).join(" / ")}</span>
+                        )}
+                        {row.startTime && (
+                          <span className="font-mono">
+                            {row.endTime ? `${row.startTime}–${row.endTime}${dur ? ` (${dur})` : ""}` : row.startTime}
+                          </span>
+                        )}
+                        {row.notes && <span className="italic">{row.notes}</span>}
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        {row.videoUrl ? (
+                          <a href={row.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[#FF0000] hover:opacity-70 transition-opacity" title="Watch video" onClick={(e) => e.stopPropagation()}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                            </svg>
+                          </a>
+                        ) : <span />}
+                        <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
+                          <button onClick={() => handleDelete(row.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Del</button>
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center gap-4 mt-4">
-              <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
-                ← Prev
-              </button>
-              <span className="text-sm text-[var(--text-muted)]">Page {page} of {totalPages}</span>
-              <button onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
-                Next →
-              </button>
+                  return { els, lastDate: row.date };
+                },
+                { els: [], lastDate: null }
+              ).els}
             </div>
-          )}
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
+                    <th className="pb-2 pr-4 font-medium">Date</th>
+                    <th className="pb-2 pr-4 font-medium">Type</th>
+                    <th className="pb-2 pr-4 font-medium">Mode / Item</th>
+                    <th className="pb-2 pr-4 font-medium">From → To</th>
+                    <th className="pb-2 pr-4 font-medium">Time</th>
+                    <th className="pb-2 pr-4 font-medium">Notes</th>
+                    <th className="pb-2 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
+                    ({ els, lastDate }, row, i) => {
+                      if (row.date !== lastDate) {
+                        els.push(
+                          <tr key={`date-${row.date}-${i}`} className="bg-[var(--surface-alt)]">
+                            <td colSpan={7} className="py-1.5 px-3">
+                              <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{row.date}</span>
+                            </td>
+                          </tr>
+                        );
+                      }
+                      const dur = tripDuration(row.startTime, row.endTime);
+                      els.push(
+                        <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors" onClick={() => startEdit(row)}>
+                          <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.date}</td>
+                          <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">{row.eventType}</td>
+                          <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap">
+                            {[row.mode, row.item].filter(Boolean).join(" / ") || "—"}
+                          </td>
+                          <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">
+                            {row.origin || row.destination
+                              ? `${row.origin ?? "?"} → ${row.destination ?? "?"}`
+                              : "—"}
+                          </td>
+                          <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">
+                            {row.startTime && row.endTime
+                              ? `${row.startTime}–${row.endTime}${dur ? ` (${dur})` : ""}`
+                              : row.startTime ?? "—"}
+                          </td>
+                          <td className="py-2 pr-4 text-[var(--text)] max-w-xs">{row.notes ?? "—"}</td>
+                          <td className="py-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex gap-2 items-center">
+                              {row.videoUrl ? (
+                                <a href={row.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[#FF0000] hover:opacity-70 transition-opacity" title="Watch video">
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                  </svg>
+                                </a>
+                              ) : (
+                                <span className="text-[var(--text-muted)]">—</span>
+                              )}
+                              <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
+                              <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                      return { els, lastDate: row.date };
+                    },
+                    { els: [], lastDate: null }
+                  ).els}
+                </tbody>
+              </table>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-4 mt-4">
+                <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
+                  ← Prev
+                </button>
+                <span className="text-sm text-[var(--text-muted)]">Page {page} of {totalPages}</span>
+                <button onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
+                  Next →
+                </button>
+              </div>
+            )}
           </>
         )}
       </section>

@@ -378,7 +378,45 @@ export default function InteractionsSection() {
           <p className="text-sm text-[var(--text-muted)]">No interactions found.</p>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Mobile card list */}
+            <div className="sm:hidden flex flex-col divide-y divide-[var(--border)]">
+              {data.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
+                ({ els, lastDate }, row, i) => {
+                  if (row.entryDate !== lastDate) {
+                    els.push(
+                      <div key={`date-${row.entryDate}-${i}`} className="py-2 px-1 bg-[var(--surface-alt)]">
+                        <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{row.entryDate}</span>
+                      </div>
+                    );
+                  }
+                  els.push(
+                    <div key={row.id} className="py-3" onClick={() => startEdit(row)}>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-medium text-sm text-[var(--text)]">{personDisplay(row)}</span>
+                        <div className="flex gap-2 shrink-0">
+                          {row.rank != null && <span className="text-xs text-[var(--text-muted)]">#{row.rank}</span>}
+                          {row.sentiment != null && (
+                            <span className={`text-xs font-medium ${row.sentiment > 0 ? "text-[var(--success)]" : row.sentiment < 0 ? "text-[var(--warm)]" : "text-[var(--text-muted)]"}`}>
+                              {sentimentLabel(row.sentiment)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {row.note && <p className="text-xs text-[var(--text-muted)] mb-2 line-clamp-2">{row.note}</p>}
+                      <div className="flex justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">Edit</button>
+                        <button onClick={() => handleDelete(row.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Del</button>
+                      </div>
+                    </div>
+                  );
+                  return { els, lastDate: row.entryDate };
+                },
+                { els: [], lastDate: null }
+              ).els}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
@@ -391,24 +429,40 @@ export default function InteractionsSection() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map((row) => (
-                    <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors" onClick={() => startEdit(row)}>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.entryDate}</td>
-                      <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">{personDisplay(row)}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)]">{row.rank ?? "—"}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)]">{sentimentLabel(row.sentiment)}</td>
-                      <td className="py-2 pr-4 text-[var(--text)] max-w-xs">{row.note ?? "—"}</td>
-                      <td className="py-2" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2">
-                          <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
-                          <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {data.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
+                    ({ els, lastDate }, row, i) => {
+                      if (row.entryDate !== lastDate) {
+                        els.push(
+                          <tr key={`date-${row.entryDate}-${i}`} className="bg-[var(--surface-alt)]">
+                            <td colSpan={6} className="py-1.5 px-3">
+                              <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{row.entryDate}</span>
+                            </td>
+                          </tr>
+                        );
+                      }
+                      els.push(
+                        <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors" onClick={() => startEdit(row)}>
+                          <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.entryDate}</td>
+                          <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">{personDisplay(row)}</td>
+                          <td className="py-2 pr-4 text-[var(--text-muted)]">{row.rank ?? "—"}</td>
+                          <td className="py-2 pr-4 text-[var(--text-muted)]">{sentimentLabel(row.sentiment)}</td>
+                          <td className="py-2 pr-4 text-[var(--text)] max-w-xs">{row.note ?? "—"}</td>
+                          <td className="py-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex gap-2">
+                              <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
+                              <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                      return { els, lastDate: row.entryDate };
+                    },
+                    { els: [], lastDate: null }
+                  ).els}
                 </tbody>
               </table>
             </div>
+
             {totalPages > 1 && (
               <div className="flex items-center gap-4 mt-4">
                 <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">

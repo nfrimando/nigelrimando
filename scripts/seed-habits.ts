@@ -10,7 +10,7 @@
  *   3. Run: npm run db:seed-habits
  *
  * - Mood values (-2 to 2) go into the thoughts table with type="mood"
- * - Notes go into the thoughts table with type=null
+ * - Notes go into the thoughts table with type="note"
  * - Exercise column is skipped (tracked separately in sets/exercises tables)
  * - Milktea X is used for milktea count; MT Bought is the fallback if Milktea X is blank
  */
@@ -19,7 +19,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
-import { eq } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { habits, habitEntries, thoughts } from "../lib/schema";
 
 import { config } from "dotenv";
@@ -30,6 +30,8 @@ const client = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 const db = drizzle(client);
+
+const CHUNK = 50;
 
 // ---------------------------------------------------------------------------
 // Habit definitions
@@ -54,7 +56,6 @@ const HABIT_DEFINITIONS = [
   { key: "magnesium",      label: "Magnesium",       category: "health",        valueType: "binary",  description: "Whether I took magnesium (the day before)" },
 ] as const;
 
-// CSV column name → habit key
 const CSV_COL_TO_KEY: Record<string, string> = {
   "Work":       "work",
   "Extra Cur":  "extracurricular",
@@ -136,34 +137,40 @@ function parseDate(raw: string): string {
 async function main() {
   const csvPath = resolve(process.cwd(), "scripts/data/habits.csv");
   const rows = parseCSV(readFileSync(csvPath, "utf8"));
-  console.log(`Parsed ${rows.length} habit rows.`);
+  console.log(`Parsed ${rows.length} CSV rows.`);
 
-  // Upsert habit definitions (skip if key already exists)
+  // Upsert habit definitions
   const existingHabits = await db.select().from(habits);
   const existingKeys = new Set(existingHabits.map((h) => h.key));
-  let habitsInserted = 0;
-
-  for (const def of HABIT_DEFINITIONS) {
-    if (existingKeys.has(def.key)) continue;
-    await db.insert(habits).values({
-      key: def.key,
-      label: def.label,
-      description: def.description,
-      category: def.category,
-      valueType: def.valueType,
-      isActive: true,
-    });
-    habitsInserted++;
+  const toInsert = HABIT_DEFINITIONS.filter((d) => !existingKeys.has(d.key));
+  if (toInsert.length) {
+    await db.insert(habits).values(toInsert.map((d) => ({
+      key: d.key, label: d.label, description: d.description,
+      category: d.category, valueType: d.valueType, isActive: true,
+    })));
   }
-  console.log(`Habit definitions: ${habitsInserted} inserted, ${existingKeys.size} already existed.`);
+  console.log(`Habits: ${toInsert.length} inserted, ${existingKeys.size} already existed.`);
 
   // Build key → id map
   const allHabits = await db.select().from(habits);
   const keyToId = new Map<string, number>();
   for (const h of allHabits) keyToId.set(h.key, h.id);
 
-  let entriesInserted = 0;
-  let thoughtsInserted = 0;
+  // Pre-fetch existing data in bulk (one query each)
+  const [existingEntries, existingThoughtRows] = await Promise.all([
+    db.select({ date: habitEntries.date, habitId: habitEntries.habitId }).from(habitEntries),
+    db.select({ entryDate: thoughts.entryDate, type: thoughts.type })
+      .from(thoughts)
+      .where(inArray(thoughts.type, ["mood", "note"])),
+  ]);
+
+  const entrySet = new Set(existingEntries.map((e) => `${e.date}|${e.habitId}`));
+  const thoughtSet = new Set(existingThoughtRows.map((t) => `${t.entryDate}|${t.type}`));
+
+  type NewEntry = { date: string; habitId: number; numericValue: number };
+  type NewThought = { entryDate: string; thought: string; type: string };
+  const newEntries: NewEntry[] = [];
+  const newThoughts: NewThought[] = [];
   let rowsSkipped = 0;
 
   for (const row of rows) {
@@ -174,52 +181,58 @@ async function main() {
     try {
       date = parseDate(rawDate);
     } catch {
-      console.warn(`  ⚠ Bad date "${rawDate}" — skipping row`);
+      console.warn(`  ⚠ Bad date "${rawDate}" — skipping`);
       rowsSkipped++;
       continue;
     }
 
-    // Mood → thoughts table
     const mood = row["Mood"]?.trim();
-    if (mood) {
-      await db.insert(thoughts).values({ entryDate: date, thought: mood, type: "mood" });
-      thoughtsInserted++;
+    if (mood && !thoughtSet.has(`${date}|mood`)) {
+      newThoughts.push({ entryDate: date, thought: mood, type: "mood" });
+      thoughtSet.add(`${date}|mood`);
     }
 
-    // Notes → thoughts table
-    const notes = row["Notes"]?.trim();
-    if (notes) {
-      await db.insert(thoughts).values({ entryDate: date, thought: notes, type: null });
-      thoughtsInserted++;
+    const note = row["Notes"]?.trim();
+    if (note && !thoughtSet.has(`${date}|note`)) {
+      newThoughts.push({ entryDate: date, thought: note, type: "note" });
+      thoughtSet.add(`${date}|note`);
     }
 
-    // Milktea: prefer Milktea X, fall back to MT Bought
     const milkteaRaw = row["Milktea X"]?.trim() || row["MT Bought"]?.trim();
     if (milkteaRaw) {
       const val = parseFloat(milkteaRaw);
-      if (!isNaN(val)) {
-        const habitId = keyToId.get("milktea");
-        if (habitId !== undefined) {
-          await db.insert(habitEntries).values({ date, habitId, numericValue: val });
-          entriesInserted++;
-        }
+      const habitId = keyToId.get("milktea");
+      if (!isNaN(val) && habitId !== undefined && !entrySet.has(`${date}|${habitId}`)) {
+        newEntries.push({ date, habitId, numericValue: val });
+        entrySet.add(`${date}|${habitId}`);
       }
     }
 
-    // All other mapped habit columns
     for (const [col, key] of Object.entries(CSV_COL_TO_KEY)) {
       const raw = row[col]?.trim();
       if (!raw) continue;
       const val = parseFloat(raw);
       if (isNaN(val)) continue;
       const habitId = keyToId.get(key);
-      if (habitId === undefined) {
-        console.warn(`  ⚠ No habit found for key "${key}" — skipping`);
-        continue;
+      if (habitId === undefined) continue;
+      if (!entrySet.has(`${date}|${habitId}`)) {
+        newEntries.push({ date, habitId, numericValue: val });
+        entrySet.add(`${date}|${habitId}`);
       }
-      await db.insert(habitEntries).values({ date, habitId, numericValue: val });
-      entriesInserted++;
     }
+  }
+
+  // Batch insert
+  let entriesInserted = 0;
+  for (let i = 0; i < newEntries.length; i += CHUNK) {
+    const res = await db.insert(habitEntries).values(newEntries.slice(i, i + CHUNK)).onConflictDoNothing();
+    entriesInserted += res.rowsAffected;
+  }
+
+  let thoughtsInserted = 0;
+  for (let i = 0; i < newThoughts.length; i += CHUNK) {
+    const res = await db.insert(thoughts).values(newThoughts.slice(i, i + CHUNK));
+    thoughtsInserted += res.rowsAffected;
   }
 
   console.log(`\nDone.`);

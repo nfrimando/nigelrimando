@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `idx_thoughts_entry_date_type` ON `thoughts` (`entry_date`,`type`);

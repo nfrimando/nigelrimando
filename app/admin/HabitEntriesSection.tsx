@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Habit, HabitEntry } from "@/lib/schema";
 
 function Spinner({ light }: { light?: boolean }) {
@@ -41,7 +41,16 @@ const submitClass =
 const cancelClass =
   "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200";
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 200;
+
+function formatDate(dateStr: string): { long: string; day: string } {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return {
+    long: date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+    day: date.toLocaleDateString("en-US", { weekday: "long" }),
+  };
+}
 
 type EntryRow = HabitEntry & { habitLabel: string; habitKey: string };
 type FormState = { date: string; habitId: string; numericValue: string; textValue: string };
@@ -200,6 +209,15 @@ export default function HabitEntriesSection() {
     fetchPage(page, search.trim());
   }
 
+  const dateGroups = useMemo<[string, EntryRow[]][]>(() => {
+    const map = new Map<string, EntryRow[]>();
+    for (const row of data) {
+      if (!map.has(row.date)) map.set(row.date, []);
+      map.get(row.date)!.push(row);
+    }
+    return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  }, [data]);
+
   // Log Habits wizard helpers
   const activeHabits = habits.filter((h) => h.isActive);
   const currentHabit = activeHabits[logStep];
@@ -288,7 +306,8 @@ export default function HabitEntriesSection() {
         {saveError && <p className="text-sm text-red-500 mb-3">{saveError}</p>}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="font-heading font-bold text-base text-[var(--text)] flex items-center gap-2">
-            Habit Entries ({total})
+            Habit Entries · {dateGroups.length} {dateGroups.length === 1 ? "day" : "days"}
+            <span className="text-[var(--text-muted)] font-normal text-sm">({total} entries)</span>
             {fetching && <Spinner />}
           </h2>
           <div className="flex items-center gap-3">
@@ -321,41 +340,89 @@ export default function HabitEntriesSection() {
           <p className="text-sm text-[var(--text-muted)]">No habit entries found.</p>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
-                    <th className="pb-2 pr-4 font-medium">Date</th>
-                    <th className="pb-2 pr-4 font-medium">Habit</th>
-                    <th className="pb-2 pr-4 font-medium">Value</th>
-                    <th className="pb-2 pr-4 font-medium">Notes</th>
-                    <th className="pb-2 font-medium"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors"
-                      onClick={() => startEdit(row)}
-                    >
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.date}</td>
-                      <td className="py-2 pr-4 text-[var(--text)]">{row.habitLabel}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)]">{row.numericValue ?? "—"}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] max-w-xs truncate">{row.textValue ?? "—"}</td>
-                      <td className="py-2" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2">
-                          <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
-                          <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex flex-col divide-y divide-[var(--border)]">
+              {dateGroups.map(([date, entries]) => {
+                const { long: longDate, day: dayOfWeek } = formatDate(date);
+                const entryByHabitId = new Map(entries.map((e) => [e.habitId, e]));
+                // Inactive habits that have entries for this date (show logged, no gap pill)
+                const inactiveEntries = entries.filter((e) => !activeHabits.find((h) => h.id === e.habitId));
+                return (
+                  <div key={date} className="py-4 first:pt-0 last:pb-0">
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <span className="font-mono text-xs text-[var(--text-muted)]">{date}</span>
+                      <span className="text-sm font-semibold text-[var(--text)]">{longDate}</span>
+                      <span className="text-xs text-[var(--text-muted)]">{dayOfWeek}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {activeHabits.map((habit) => {
+                        const entry = entryByHabitId.get(habit.id);
+                        if (entry) {
+                          const v = entry.numericValue ?? 0;
+                          let bgClass: string;
+                          let label: string;
+
+                          if (habit.valueType === "binary") {
+                            bgClass = v === 1
+                              ? "bg-[var(--success)] text-white hover:opacity-80"
+                              : "bg-[var(--warm)] text-white hover:opacity-80";
+                            label = v === 1 ? `✓ ${habit.label}` : `✗ ${habit.label}`;
+                          } else if (habit.valueType === "scaled") {
+                            bgClass = v === 0
+                              ? "bg-[var(--warm)] text-white hover:opacity-80"
+                              : v >= 1
+                              ? "bg-[var(--success)] text-white hover:opacity-80"
+                              : "bg-amber-500 text-white hover:opacity-80";
+                            label = `${habit.label} · ${v}`;
+                          } else {
+                            // count
+                            bgClass = v > 0
+                              ? "bg-[var(--accent)] text-white hover:opacity-80"
+                              : "bg-[var(--surface-alt)] text-[var(--text-muted)] border border-[var(--border)] hover:opacity-80";
+                            label = v > 0 ? `${habit.label} ×${v}` : `${habit.label} · 0`;
+                          }
+
+                          return (
+                            <button
+                              key={habit.id}
+                              onClick={() => startEdit(entry)}
+                              title={entry.textValue ? `Notes: ${entry.textValue}` : undefined}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${bgClass}`}
+                            >
+                              {label}
+                            </button>
+                          );
+                        }
+                        return (
+                          <button
+                            key={habit.id}
+                            onClick={() => {
+                              setForm({ date, habitId: String(habit.id), numericValue: "", textValue: "" });
+                              setAddError("");
+                              setShowAddModal(true);
+                            }}
+                            className="px-3 py-1 rounded-full text-xs font-medium border border-dashed border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+                          >
+                            {habit.label} —
+                          </button>
+                        );
+                      })}
+                      {inactiveEntries.map((entry) => (
+                        <button
+                          key={entry.id}
+                          onClick={() => startEdit(entry)}
+                          title={`${entry.habitLabel}${entry.textValue ? ` · ${entry.textValue}` : ""}`}
+                          className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--surface-alt)] text-[var(--text-muted)] border border-[var(--border)] hover:opacity-80 transition-colors"
+                        >
+                          {entry.habitLabel} · {entry.numericValue ?? "—"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             {totalPages > 1 && (
-              <div className="flex items-center gap-4 mt-4">
+              <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[var(--border)]">
                 <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
                   ← Prev
                 </button>
