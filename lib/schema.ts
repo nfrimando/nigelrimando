@@ -1,4 +1,4 @@
-import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 export const exercises = sqliteTable("exercises", {
@@ -190,3 +190,48 @@ export const expenses = sqliteTable(
 
 export type Expense = typeof expenses.$inferSelect;
 export type NewExpense = typeof expenses.$inferInsert;
+
+export const habits = sqliteTable("habits", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  key: text("key").notNull().unique(),
+  label: text("label").notNull(),
+  description: text("description"),
+  category: text("category").notNull(), // 'work' | 'health' | 'relationships' | 'hobbies' | 'lifestyle'
+  valueType: text("value_type").notNull(), // 'binary' | 'scaled' | 'count'
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const habitEntries = sqliteTable(
+  "habit_entries",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    date: text("date").notNull(), // 'YYYY-MM-DD'
+    habitId: integer("habit_id")
+      .notNull()
+      .references(() => habits.id),
+    numericValue: real("numeric_value"), // 0, 0.5, 1, 2 etc.
+    textValue: text("text_value"),
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at")
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    index("idx_habit_entries_date").on(t.date),
+    index("idx_habit_entries_habit_id").on(t.habitId),
+    uniqueIndex("idx_habit_entries_date_habit").on(t.date, t.habitId),
+  ],
+);
+
+export type Habit = typeof habits.$inferSelect;
+export type NewHabit = typeof habits.$inferInsert;
+export type HabitEntry = typeof habitEntries.$inferSelect;
+export type NewHabitEntry = typeof habitEntries.$inferInsert;

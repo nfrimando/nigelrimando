@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Thought } from "@/lib/schema";
+import type { Habit, HabitEntry } from "@/lib/schema";
 
 function Spinner({ light }: { light?: boolean }) {
   return (
@@ -42,20 +42,22 @@ const cancelClass =
   "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200";
 
 const PAGE_SIZE = 25;
-const THOUGHT_TYPES = ["mood", "reflection", "idea", "goal", "gratitude", "rant", "other"];
 
-type FormState = { entryDate: string; thought: string; type: string };
+type EntryRow = HabitEntry & { habitLabel: string; habitKey: string };
+type FormState = { date: string; habitId: string; numericValue: string; textValue: string };
 
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
-const defaultForm: FormState = { entryDate: today, thought: "", type: "" };
+const defaultForm: FormState = { date: today, habitId: "", numericValue: "", textValue: "" };
 
-export default function ThoughtsSection() {
-  const [data, setData] = useState<Thought[]>([]);
+export default function HabitEntriesSection() {
+  const [data, setData] = useState<EntryRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [fetching, setFetching] = useState(false);
   const [search, setSearch] = useState("");
+
+  const [habits, setHabits] = useState<Habit[]>([]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState<FormState>(defaultForm);
@@ -67,12 +69,17 @@ export default function ThoughtsSection() {
   const [editError, setEditError] = useState("");
   const [saveError, setSaveError] = useState("");
 
+  async function fetchHabits() {
+    const res = await fetch("/api/admin/habits");
+    if (res.ok) setHabits(await res.json());
+  }
+
   async function fetchPage(p: number, q: string) {
     setFetching(true);
     try {
       const params = new URLSearchParams({ page: String(p), limit: String(PAGE_SIZE) });
       if (q) params.set("q", q);
-      const res = await fetch(`/api/admin/thoughts?${params}`);
+      const res = await fetch(`/api/admin/habit-entries?${params}`);
       if (res.ok) {
         const json = await res.json();
         setData(json.data ?? []);
@@ -86,6 +93,7 @@ export default function ThoughtsSection() {
   }
 
   useEffect(() => {
+    fetchHabits();
     fetchPage(1, "");
   }, []);
 
@@ -109,7 +117,7 @@ export default function ThoughtsSection() {
     setAddError("");
     setAddLoading(true);
     try {
-      const res = await fetch("/api/admin/thoughts", {
+      const res = await fetch("/api/admin/habit-entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -120,16 +128,21 @@ export default function ThoughtsSection() {
         fetchPage(page, search.trim());
       } else {
         const json = await res.json();
-        setAddError(json.error || "Failed to add thought.");
+        setAddError(json.error || "Failed to add entry.");
       }
     } finally {
       setAddLoading(false);
     }
   }
 
-  function startEdit(t: Thought) {
-    setEditingId(t.id);
-    setEditForm({ entryDate: t.entryDate, thought: t.thought, type: t.type ?? "" });
+  function startEdit(row: EntryRow) {
+    setEditingId(row.id);
+    setEditForm({
+      date: row.date,
+      habitId: String(row.habitId),
+      numericValue: row.numericValue != null ? String(row.numericValue) : "",
+      textValue: row.textValue ?? "",
+    });
     setEditError("");
   }
 
@@ -138,38 +151,41 @@ export default function ThoughtsSection() {
     if (!editingId) return;
 
     const id = editingId;
-    const originalRow = data.find((t) => t.id === id)!;
-    const optimistic: Thought = {
+    const originalRow = data.find((r) => r.id === id)!;
+    const matchedHabit = habits.find((h) => h.id === Number(editForm.habitId));
+    const optimistic: EntryRow = {
       ...originalRow,
-      entryDate: editForm.entryDate,
-      thought: editForm.thought,
-      type: editForm.type || null,
+      date: editForm.date,
+      habitId: Number(editForm.habitId),
+      numericValue: editForm.numericValue !== "" ? Number(editForm.numericValue) : null,
+      textValue: editForm.textValue || null,
+      habitLabel: matchedHabit?.label ?? originalRow.habitLabel,
+      habitKey: matchedHabit?.key ?? originalRow.habitKey,
     };
 
-    setData((prev) => prev.map((t) => (t.id === id ? optimistic : t)));
+    setData((prev) => prev.map((r) => (r.id === id ? optimistic : r)));
     setEditingId(null);
 
-    const res = await fetch(`/api/admin/thoughts/${id}`, {
+    const res = await fetch(`/api/admin/habit-entries/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editForm),
     });
     if (res.ok) {
-      const updated = await res.json();
-      setData((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      fetchPage(page, search.trim());
     } else {
       const json = await res.json();
-      setData((prev) => prev.map((t) => (t.id === id ? originalRow : t)));
+      setData((prev) => prev.map((r) => (r.id === id ? originalRow : r)));
       setEditingId(id);
-      setEditError(json.error || "Failed to update thought.");
+      setEditError(json.error || "Failed to update entry.");
       setSaveError("Failed to save. Changes reverted.");
       setTimeout(() => setSaveError(""), 3000);
     }
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Delete this thought? This cannot be undone.")) return;
-    await fetch(`/api/admin/thoughts/${id}`, { method: "DELETE" });
+    if (!confirm("Delete this habit entry? This cannot be undone.")) return;
+    await fetch(`/api/admin/habit-entries/${id}`, { method: "DELETE" });
     fetchPage(page, search.trim());
   }
 
@@ -179,7 +195,7 @@ export default function ThoughtsSection() {
         {saveError && <p className="text-sm text-red-500 mb-3">{saveError}</p>}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="font-heading font-bold text-base text-[var(--text)] flex items-center gap-2">
-            Thoughts ({total})
+            Habit Entries ({total})
             {fetching && <Spinner />}
           </h2>
           <div className="flex items-center gap-3">
@@ -196,13 +212,13 @@ export default function ThoughtsSection() {
               onClick={() => { setForm(defaultForm); setAddError(""); setShowAddModal(true); }}
               className={submitClass}
             >
-              + Add thought
+              + Add entry
             </button>
           </div>
         </div>
 
         {data.length === 0 ? (
-          <p className="text-sm text-[var(--text-muted)]">No thoughts found.</p>
+          <p className="text-sm text-[var(--text-muted)]">No habit entries found.</p>
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -210,21 +226,27 @@ export default function ThoughtsSection() {
                 <thead>
                   <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
                     <th className="pb-2 pr-4 font-medium">Date</th>
-                    <th className="pb-2 pr-4 font-medium">Type</th>
-                    <th className="pb-2 pr-4 font-medium">Thought</th>
+                    <th className="pb-2 pr-4 font-medium">Habit</th>
+                    <th className="pb-2 pr-4 font-medium">Value</th>
+                    <th className="pb-2 pr-4 font-medium">Notes</th>
                     <th className="pb-2 font-medium"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map((t) => (
-                    <tr key={t.id} className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors" onClick={() => startEdit(t)}>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{t.entryDate}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap">{t.type ?? "—"}</td>
-                      <td className="py-2 pr-4 text-[var(--text)] max-w-md">{t.thought}</td>
+                  {data.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors"
+                      onClick={() => startEdit(row)}
+                    >
+                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.date}</td>
+                      <td className="py-2 pr-4 text-[var(--text)]">{row.habitLabel}</td>
+                      <td className="py-2 pr-4 text-[var(--text-muted)]">{row.numericValue ?? "—"}</td>
+                      <td className="py-2 pr-4 text-[var(--text-muted)] max-w-xs truncate">{row.textValue ?? "—"}</td>
                       <td className="py-2" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-2">
-                          <button onClick={() => startEdit(t)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
-                          <button onClick={() => handleDelete(t.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
+                          <button onClick={() => startEdit(row)} className="text-xs text-[var(--accent)] hover:underline">Edit</button>
+                          <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
                         </div>
                       </td>
                     </tr>
@@ -248,44 +270,56 @@ export default function ThoughtsSection() {
       </section>
 
       {showAddModal && (
-        <Modal title="Add thought" onClose={() => setShowAddModal(false)}>
+        <Modal title="Add habit entry" onClose={() => setShowAddModal(false)}>
           <form onSubmit={handleAdd} className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
               <Field label="Date">
                 <input
                   type="date"
-                  value={form.entryDate}
-                  onChange={(e) => setForm({ ...form, entryDate: e.target.value })}
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
                   required
                   className={inputClass}
                 />
               </Field>
-              <Field label="Type (optional)">
+              <Field label="Habit">
                 <select
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
+                  value={form.habitId}
+                  onChange={(e) => setForm({ ...form, habitId: e.target.value })}
+                  required
                   className={inputClass}
                 >
-                  <option value="">— none —</option>
-                  {THOUGHT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  <option value="">— select —</option>
+                  {habits.map((h) => (
+                    <option key={h.id} value={h.id}>{h.label}</option>
+                  ))}
                 </select>
               </Field>
+              <Field label="Numeric Value (optional)">
+                <input
+                  type="number"
+                  step="any"
+                  value={form.numericValue}
+                  onChange={(e) => setForm({ ...form, numericValue: e.target.value })}
+                  placeholder="e.g. 0.5"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Text Value (optional)">
+                <input
+                  type="text"
+                  value={form.textValue}
+                  onChange={(e) => setForm({ ...form, textValue: e.target.value })}
+                  placeholder="Notes…"
+                  className={inputClass}
+                />
+              </Field>
             </div>
-            <Field label="Thought">
-              <textarea
-                value={form.thought}
-                onChange={(e) => setForm({ ...form, thought: e.target.value })}
-                required
-                rows={4}
-                placeholder="Write your thought…"
-                className={`${inputClass} resize-y`}
-              />
-            </Field>
             {addError && <p className="text-sm text-red-500">{addError}</p>}
             <div className="flex gap-3 pt-1">
               <button type="submit" disabled={addLoading} className={`${submitClass} inline-flex items-center gap-2`}>
                 {addLoading && <Spinner light />}
-                {addLoading ? "Adding…" : "Add thought"}
+                {addLoading ? "Adding…" : "Add entry"}
               </button>
               <button type="button" onClick={() => setShowAddModal(false)} className={cancelClass}>Cancel</button>
             </div>
@@ -294,38 +328,51 @@ export default function ThoughtsSection() {
       )}
 
       {editingId !== null && (
-        <Modal title="Edit thought" onClose={() => setEditingId(null)}>
+        <Modal title="Edit habit entry" onClose={() => setEditingId(null)}>
           <form onSubmit={handleEdit} className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
               <Field label="Date">
                 <input
                   type="date"
-                  value={editForm.entryDate}
-                  onChange={(e) => setEditForm({ ...editForm, entryDate: e.target.value })}
+                  value={editForm.date}
+                  onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
                   required
                   className={inputClass}
                 />
               </Field>
-              <Field label="Type (optional)">
+              <Field label="Habit">
                 <select
-                  value={editForm.type}
-                  onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+                  value={editForm.habitId}
+                  onChange={(e) => setEditForm({ ...editForm, habitId: e.target.value })}
+                  required
                   className={inputClass}
                 >
-                  <option value="">— none —</option>
-                  {THOUGHT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  <option value="">— select —</option>
+                  {habits.map((h) => (
+                    <option key={h.id} value={h.id}>{h.label}</option>
+                  ))}
                 </select>
               </Field>
+              <Field label="Numeric Value (optional)">
+                <input
+                  type="number"
+                  step="any"
+                  value={editForm.numericValue}
+                  onChange={(e) => setEditForm({ ...editForm, numericValue: e.target.value })}
+                  placeholder="e.g. 0.5"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Text Value (optional)">
+                <input
+                  type="text"
+                  value={editForm.textValue}
+                  onChange={(e) => setEditForm({ ...editForm, textValue: e.target.value })}
+                  placeholder="Notes…"
+                  className={inputClass}
+                />
+              </Field>
             </div>
-            <Field label="Thought">
-              <textarea
-                value={editForm.thought}
-                onChange={(e) => setEditForm({ ...editForm, thought: e.target.value })}
-                required
-                rows={4}
-                className={`${inputClass} resize-y`}
-              />
-            </Field>
             {editError && <p className="text-sm text-red-500">{editError}</p>}
             <div className="flex gap-3 pt-1">
               <button type="submit" className={submitClass}>Save changes</button>

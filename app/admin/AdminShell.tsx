@@ -9,6 +9,8 @@ import ThoughtsSection from "./ThoughtsSection";
 import InteractionsSection from "./InteractionsSection";
 import TransportsSection from "./TransportsSection";
 import ExpensesSection from "./ExpensesSection";
+import HabitsSection from "./HabitsSection";
+import HabitEntriesSection from "./HabitEntriesSection";
 
 const TABS = [
   "Exercises",
@@ -19,6 +21,8 @@ const TABS = [
   "Interactions",
   "Transports",
   "Expenses",
+  "Habits",
+  "Habit Entries",
 ] as const;
 type Tab = (typeof TABS)[number];
 
@@ -90,6 +94,8 @@ export default function AdminShell() {
         {activeTab === "Interactions" && <InteractionsSection />}
         {activeTab === "Transports" && <TransportsSection />}
         {activeTab === "Expenses" && <ExpensesSection />}
+        {activeTab === "Habits" && <HabitsSection />}
+        {activeTab === "Habit Entries" && <HabitEntriesSection />}
       </div>
     </div>
   );
