@@ -267,11 +267,22 @@ export default function HabitEntriesSection() {
   useEffect(() => {
     if (!showLogModal || !currentHabit) return;
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key !== "Enter") return;
-      if ((e.target as HTMLElement).tagName === "BUTTON") return;
+      const target = e.target as HTMLElement;
+      const isButton = target.tagName === "BUTTON";
+      const isInput = target.tagName === "INPUT";
       if (logLoading) return;
-      e.preventDefault();
-      advanceStepRef.current(true);
+      if (e.key === "Enter" && !isButton) {
+        e.preventDefault();
+        advanceStepRef.current(true);
+      } else if (!isButton && !isInput && currentHabit.valueType === "binary") {
+        if (e.key === "1") {
+          e.preventDefault();
+          setCurrentLogForm((f) => ({ ...f, numericValue: "1" }));
+        } else if (e.key === "0") {
+          e.preventDefault();
+          setCurrentLogForm((f) => ({ ...f, numericValue: "0" }));
+        }
+      }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);

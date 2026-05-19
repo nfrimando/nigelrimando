@@ -8,6 +8,7 @@ import { Dumbbell } from "lucide-react";
 import { getContentStream } from "@/lib/content-stream";
 import type { ContentItem } from "@/lib/content-stream";
 import StreamScroller from "@/components/StreamScroller";
+import VisitorMessageForm from "@/components/VisitorMessageForm";
 
 // ── Components ────────────────────────────────────────────────────────────────
 
@@ -441,10 +442,13 @@ export default async function Home() {
           <div className="mt-6 rounded-[20px] bg-surface border border-border px-6 py-5">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-mono text-muted uppercase tracking-widest">
-                Milk Tea · last 21 days · 0% Sugar, Less Ice
+                🧋 Milk Tea · last 21 days · 0% Sugar, Less Ice
               </p>
-              <a href="/journal/habits" className="text-xs text-muted font-mono opacity-40 hover:opacity-70 transition-opacity select-none">
-                habits →
+              <a
+                href="/journal/habits"
+                className="inline-block px-4 py-2 rounded-[14px] bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors duration-[180ms]"
+              >
+                View habits →
               </a>
             </div>
             <div id="milktea-scroll" className="overflow-x-auto">
@@ -555,28 +559,33 @@ export default async function Home() {
 
         {/* ── Personal Note ─────────────────────────────────────────────── */}
         <section className="py-24">
-          <div className="max-w-[760px]">
-            <SectionLabel>A bit about me</SectionLabel>
-            <h2 className="text-3xl font-bold font-heading text-text mb-6">
-              Your math and stats guy turned coder and data nerd.
-            </h2>
-            <p className="text-muted leading-relaxed mb-5">
-              I&apos;m a systems thinker who spent years working end-to-end with
-              data and how it flows from raw information to actionable insights.
-              I care about building things that are genuinely useful — not just
-              technically impressive.
-            </p>
-            <p className="text-muted leading-relaxed mb-5">
-              Outside of work, I&apos;m deep into fitness, I drink at least two
-              milk teas everyday, and i&apos;m super active in our local padel
-              community. I track a lot of personal data out of curiosity, and
-              live with our rescued cats. Estoy tambien aprendiendo Español poco
-              a poco.
-            </p>
-            <p className="text-sm text-muted font-mono">
-              Based in the Philippines · Currently working full-time for Tala
-              Financing Inc.
-            </p>
+          <SectionLabel>A bit about me</SectionLabel>
+          <div className="flex flex-col lg:flex-row lg:gap-16">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-3xl font-bold font-heading text-text mb-6">
+                Your math and stats guy turned coder and data nerd.
+              </h2>
+              <p className="text-muted leading-relaxed mb-5">
+                I&apos;m a systems thinker who spent years working end-to-end with
+                data and how it flows from raw information to actionable insights.
+                I care about building things that are genuinely useful — not just
+                technically impressive.
+              </p>
+              <p className="text-muted leading-relaxed mb-5">
+                Outside of work, I&apos;m deep into fitness, I drink at least two
+                milk teas everyday, and i&apos;m super active in our local padel
+                community. I track a lot of personal data out of curiosity, and
+                live with our rescued cats. Estoy tambien aprendiendo Español poco
+                a poco.
+              </p>
+              <p className="text-sm text-muted font-mono">
+                Based in the Philippines · Currently working full-time for Tala
+                Financing Inc.
+              </p>
+            </div>
+            <div className="lg:w-[380px] shrink-0 mt-10 lg:mt-0">
+              <VisitorMessageForm />
+            </div>
           </div>
         </section>
 

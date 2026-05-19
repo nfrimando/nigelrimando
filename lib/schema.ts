@@ -237,3 +237,19 @@ export type Habit = typeof habits.$inferSelect;
 export type NewHabit = typeof habits.$inferInsert;
 export type HabitEntry = typeof habitEntries.$inferSelect;
 export type NewHabitEntry = typeof habitEntries.$inferInsert;
+
+export const visitorMessages = sqliteTable("visitor_messages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  message: text("message").notNull(),
+  senderHandle: text("sender_handle"),
+  reply: text("reply"),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export type VisitorMessage = typeof visitorMessages.$inferSelect;
+export type NewVisitorMessage = typeof visitorMessages.$inferInsert;

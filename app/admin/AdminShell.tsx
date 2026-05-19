@@ -11,8 +11,9 @@ import TransportsSection from "./TransportsSection";
 import ExpensesSection from "./ExpensesSection";
 import HabitsSection from "./HabitsSection";
 import HabitEntriesSection from "./HabitEntriesSection";
+import VisitorMessagesSection from "./VisitorMessagesSection";
 
-const DAILY_TABS = ["Sets", "Padel Sets", "Thoughts", "Interactions", "Transports", "Expenses", "Habit Entries"] as const;
+const DAILY_TABS = ["Sets", "Padel Sets", "Thoughts", "Interactions", "Transports", "Expenses", "Habit Entries", "Messages"] as const;
 const SETUP_TABS = ["Exercises", "Persons", "Habits"] as const;
 const ALL_TABS = [...DAILY_TABS, ...SETUP_TABS] as const;
 
@@ -106,6 +107,7 @@ export default function AdminShell() {
         {activeTab === "Expenses" && <ExpensesSection />}
         {activeTab === "Habits" && <HabitsSection />}
         {activeTab === "Habit Entries" && <HabitEntriesSection />}
+        {activeTab === "Messages" && <VisitorMessagesSection />}
       </div>
     </div>
   );

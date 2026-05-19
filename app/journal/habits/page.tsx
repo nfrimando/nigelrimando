@@ -328,11 +328,11 @@ export default async function HabitsJournalPage({
 
         {/* Selected habit description */}
         {selectedHabit.description && (
-          <p className="text-sm text-[var(--text-muted)] -mt-4">{selectedHabit.description}</p>
+          <p className="text-base text-[var(--text-muted)] -mt-4">{selectedHabit.description}</p>
         )}
 
         {/* Stat cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <StatCard
             label="Logged (12mo)"
             value={daysLogged365.toLocaleString()}
@@ -341,10 +341,6 @@ export default async function HabitsJournalPage({
           <StatCard
             label="First entry"
             value={firstEntryDate ? formatShortDate(firstEntryDate) : "—"}
-          />
-          <StatCard
-            label="Last entry"
-            value={lastEntryDate ? formatShortDate(lastEntryDate) : "—"}
           />
           <StatCard
             label="Days since last"
