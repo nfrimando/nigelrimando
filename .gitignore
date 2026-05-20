@@ -43,8 +43,3 @@ next-env.d.ts
 # claude code
 .claude/
 
-# local data / seeds
-scripts/data/
-
-# drizzle migration snapshots
-drizzle/meta/

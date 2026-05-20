@@ -41,6 +41,14 @@ When computing differences between two `YYYY-MM-DD` strings, parse them as local
 - Use Tailwind utility classes only — no CSS modules or styled-components
 - TypeScript strict mode on
 
+## Email Notifications
+
+Always `await` email notification calls and chain `.catch()` for error logging — never fire-and-forget. Fire-and-forget silently drops errors and can cause missed sends.
+
+```ts
+await notifyXxx(...).catch((err) => console.error("[email] ...", err));
+```
+
 # Personal Site Design System
 
 ## Brand

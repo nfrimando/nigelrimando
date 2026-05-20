@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { visitorMessages } from "@/lib/schema";
+import { notifyVisitorMessage } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -16,6 +17,10 @@ export async function POST(req: NextRequest) {
       : null;
 
   await db.insert(visitorMessages).values({ message, senderHandle });
+
+  await notifyVisitorMessage({ message, senderHandle }).catch((err) =>
+    console.error("[email] visitor message notification failed:", err)
+  );
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }
