@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { Habit } from "@/lib/schema";
 
 function Spinner({ light }: { light?: boolean }) {
@@ -141,6 +141,11 @@ export default function HabitsSection() {
       )
     : habits;
 
+  const grouped = HABIT_VALUE_TYPES.map((vt) => ({
+    type: vt,
+    habits: filtered.filter((h) => h.valueType === vt),
+  })).filter((g) => g.habits.length > 0);
+
   return (
     <div className="flex flex-col gap-6">
       <section className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6">
@@ -171,33 +176,41 @@ export default function HabitsSection() {
         ) : (
           <>
             {/* Mobile card list */}
-            <div className="sm:hidden flex flex-col divide-y divide-[var(--border)]">
-              {filtered.map((h) => (
-                <div key={h.id} className="py-3 cursor-pointer" onClick={() => openEdit(h)}>
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <div className="min-w-0">
-                      <span className="font-medium text-sm text-[var(--text)]">{h.label}</span>
-                      <span className="ml-2 font-mono text-xs text-[var(--text-muted)]">{h.key}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${h.isActive ? "bg-[var(--success)]/10 text-[var(--success)]" : "bg-[var(--surface-alt)] text-[var(--text-muted)]"}`}>
-                        {h.isActive ? "active" : "inactive"}
-                      </span>
-                    </div>
+            <div className="sm:hidden flex flex-col">
+              {grouped.map((group) => (
+                <div key={group.type}>
+                  <div className="py-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border)]">
+                    {group.type}
                   </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[var(--text-muted)] mb-2">
-                    <span>{h.category}</span>
-                    <span>{h.valueType}</span>
-                    {h.description && <span className="italic">{h.description}</span>}
-                  </div>
-                  <div className="flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => handleTogglePublic(h.id, h.isPublic ?? false)}
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium transition-colors ${h.isPublic ? "bg-[var(--accent)]/10 text-[var(--accent)]" : "bg-[var(--surface-alt)] text-[var(--text-muted)]"}`}
-                    >
-                      {h.isPublic ? "public: on" : "public: off"}
-                    </button>
-                    <button onClick={() => handleDelete(h.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
+                  <div className="flex flex-col divide-y divide-[var(--border)]">
+                    {group.habits.map((h) => (
+                      <div key={h.id} className="py-3 cursor-pointer" onClick={() => openEdit(h)}>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <div className="min-w-0">
+                            <span className="font-medium text-sm text-[var(--text)]">{h.label}</span>
+                            <span className="ml-2 font-mono text-xs text-[var(--text-muted)]">{h.key}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${h.isActive ? "bg-[var(--success)]/10 text-[var(--success)]" : "bg-[var(--surface-alt)] text-[var(--text-muted)]"}`}>
+                              {h.isActive ? "active" : "inactive"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[var(--text-muted)] mb-2">
+                          <span>{h.category}</span>
+                          {h.description && <span className="italic">{h.description}</span>}
+                        </div>
+                        <div className="flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleTogglePublic(h.id, h.isPublic ?? false)}
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium transition-colors ${h.isPublic ? "bg-[var(--accent)]/10 text-[var(--accent)]" : "bg-[var(--surface-alt)] text-[var(--text-muted)]"}`}
+                          >
+                            {h.isPublic ? "public: on" : "public: off"}
+                          </button>
+                          <button onClick={() => handleDelete(h.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -212,41 +225,48 @@ export default function HabitsSection() {
                     <th className="pb-2 pr-4 font-medium">Label</th>
                     <th className="pb-2 pr-4 font-medium">Description</th>
                     <th className="pb-2 pr-4 font-medium">Category</th>
-                    <th className="pb-2 pr-4 font-medium">Type</th>
                     <th className="pb-2 pr-4 font-medium">Active</th>
                     <th className="pb-2 pr-4 font-medium">Public</th>
                     <th className="pb-2 font-medium"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((h) => (
-                    <tr
-                      key={h.id}
-                      className="border-b border-[var(--border)] last:border-0 cursor-pointer hover:bg-[var(--surface-alt)] transition-colors"
-                      onClick={() => openEdit(h)}
-                    >
-                      <td className="py-2 pr-4 font-mono text-xs text-[var(--text-muted)]">{h.key}</td>
-                      <td className="py-2 pr-4 text-[var(--text)]">{h.label}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] max-w-xs">{h.description ?? "—"}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)]">{h.category}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)]">{h.valueType}</td>
-                      <td className="py-2 pr-4">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${h.isActive ? "bg-[var(--success)]/10 text-[var(--success)]" : "bg-[var(--surface-alt)] text-[var(--text-muted)]"}`}>
-                          {h.isActive ? "yes" : "no"}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleTogglePublic(h.id, h.isPublic ?? false)}
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium transition-colors ${h.isPublic ? "bg-[var(--accent)]/10 text-[var(--accent)]" : "bg-[var(--surface-alt)] text-[var(--text-muted)]"}`}
+                  {grouped.map((group) => (
+                    <React.Fragment key={group.type}>
+                      <tr>
+                        <td colSpan={7} className="pt-4 pb-1">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">{group.type}</span>
+                        </td>
+                      </tr>
+                      {group.habits.map((h) => (
+                        <tr
+                          key={h.id}
+                          className="border-b border-[var(--border)] last:border-0 cursor-pointer hover:bg-[var(--surface-alt)] transition-colors"
+                          onClick={() => openEdit(h)}
                         >
-                          {h.isPublic ? "on" : "off"}
-                        </button>
-                      </td>
-                      <td className="py-2" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => handleDelete(h.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
-                      </td>
-                    </tr>
+                          <td className="py-2 pr-4 font-mono text-xs text-[var(--text-muted)]">{h.key}</td>
+                          <td className="py-2 pr-4 text-[var(--text)]">{h.label}</td>
+                          <td className="py-2 pr-4 text-[var(--text-muted)] max-w-xs">{h.description ?? "—"}</td>
+                          <td className="py-2 pr-4 text-[var(--text-muted)]">{h.category}</td>
+                          <td className="py-2 pr-4">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${h.isActive ? "bg-[var(--success)]/10 text-[var(--success)]" : "bg-[var(--surface-alt)] text-[var(--text-muted)]"}`}>
+                              {h.isActive ? "yes" : "no"}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-4" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => handleTogglePublic(h.id, h.isPublic ?? false)}
+                              className={`text-xs px-2 py-0.5 rounded-full font-medium transition-colors ${h.isPublic ? "bg-[var(--accent)]/10 text-[var(--accent)]" : "bg-[var(--surface-alt)] text-[var(--text-muted)]"}`}
+                            >
+                              {h.isPublic ? "on" : "off"}
+                            </button>
+                          </td>
+                          <td className="py-2" onClick={(e) => e.stopPropagation()}>
+                            <button onClick={() => handleDelete(h.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Delete</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

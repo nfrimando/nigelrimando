@@ -380,69 +380,84 @@ export default function HabitEntriesSection() {
                       <span className="text-sm font-semibold text-[var(--text)]">{longDate}</span>
                       <span className="text-xs text-[var(--text-muted)]">{dayOfWeek}</span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {activeHabits.map((habit) => {
-                        const entry = entryByHabitId.get(habit.id);
-                        if (entry) {
-                          const v = entry.numericValue ?? 0;
-                          let bgClass: string;
-                          let label: string;
+                    <div className="flex flex-col gap-3">
+                      {(["binary", "scaled", "count"] as const)
+                        .map((vt) => ({ type: vt, habits: activeHabits.filter((h) => h.valueType === vt) }))
+                        .filter((g) => g.habits.length > 0)
+                        .map((group) => (
+                          <div key={group.type}>
+                            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                              {group.type}
+                            </span>
+                            <div className="flex flex-wrap gap-2 mt-1.5">
+                              {group.habits.map((habit) => {
+                                const entry = entryByHabitId.get(habit.id);
+                                if (entry) {
+                                  const v = entry.numericValue ?? 0;
+                                  let bgClass: string;
+                                  let label: string;
 
-                          if (habit.valueType === "binary") {
-                            bgClass = v === 1
-                              ? "bg-[var(--success)] text-white hover:opacity-80"
-                              : "bg-[var(--warm)] text-white hover:opacity-80";
-                            label = v === 1 ? `✓ ${habit.label}` : `✗ ${habit.label}`;
-                          } else if (habit.valueType === "scaled") {
-                            bgClass = v === 0
-                              ? "bg-[var(--warm)] text-white hover:opacity-80"
-                              : v >= 1
-                              ? "bg-[var(--success)] text-white hover:opacity-80"
-                              : "bg-amber-500 text-white hover:opacity-80";
-                            label = `${habit.label} · ${v}`;
-                          } else {
-                            // count
-                            bgClass = v > 0
-                              ? "bg-[var(--accent)] text-white hover:opacity-80"
-                              : "bg-[var(--surface-alt)] text-[var(--text-muted)] border border-[var(--border)] hover:opacity-80";
-                            label = v > 0 ? `${habit.label} ×${v}` : `${habit.label} · 0`;
-                          }
+                                  if (habit.valueType === "binary") {
+                                    bgClass = v === 1
+                                      ? "bg-[var(--success)] text-white hover:opacity-80"
+                                      : "bg-[var(--warm)] text-white hover:opacity-80";
+                                    label = v === 1 ? `✓ ${habit.label}` : `✗ ${habit.label}`;
+                                  } else if (habit.valueType === "scaled") {
+                                    bgClass = v === 0
+                                      ? "bg-[var(--warm)] text-white hover:opacity-80"
+                                      : v >= 1
+                                      ? "bg-[var(--success)] text-white hover:opacity-80"
+                                      : "bg-amber-500 text-white hover:opacity-80";
+                                    label = `${habit.label} · ${v}`;
+                                  } else {
+                                    bgClass = v > 0
+                                      ? "bg-[var(--accent)] text-white hover:opacity-80"
+                                      : "bg-[var(--surface-alt)] text-[var(--text-muted)] border border-[var(--border)] hover:opacity-80";
+                                    label = v > 0 ? `${habit.label} ×${v}` : `${habit.label} · 0`;
+                                  }
 
-                          return (
+                                  return (
+                                    <button
+                                      key={habit.id}
+                                      onClick={() => startEdit(entry)}
+                                      title={entry.textValue ? `Notes: ${entry.textValue}` : undefined}
+                                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${bgClass}`}
+                                    >
+                                      {label}
+                                    </button>
+                                  );
+                                }
+                                return (
+                                  <button
+                                    key={habit.id}
+                                    onClick={() => {
+                                      setForm({ date, habitId: String(habit.id), numericValue: "", textValue: "" });
+                                      setAddError("");
+                                      setShowAddModal(true);
+                                    }}
+                                    className="px-3 py-1 rounded-full text-xs font-medium border border-dashed border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+                                  >
+                                    {habit.label} —
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      {inactiveEntries.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {inactiveEntries.map((entry) => (
                             <button
-                              key={habit.id}
+                              key={entry.id}
                               onClick={() => startEdit(entry)}
-                              title={entry.textValue ? `Notes: ${entry.textValue}` : undefined}
-                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${bgClass}`}
+                              title={`${entry.habitLabel}${entry.textValue ? ` · ${entry.textValue}` : ""}`}
+                              className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--surface-alt)] text-[var(--text-muted)] border border-[var(--border)] hover:opacity-80 transition-colors"
                             >
-                              {label}
+                              {entry.habitLabel} · {entry.numericValue ?? "—"}
                             </button>
-                          );
-                        }
-                        return (
-                          <button
-                            key={habit.id}
-                            onClick={() => {
-                              setForm({ date, habitId: String(habit.id), numericValue: "", textValue: "" });
-                              setAddError("");
-                              setShowAddModal(true);
-                            }}
-                            className="px-3 py-1 rounded-full text-xs font-medium border border-dashed border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
-                          >
-                            {habit.label} —
-                          </button>
-                        );
-                      })}
-                      {inactiveEntries.map((entry) => (
-                        <button
-                          key={entry.id}
-                          onClick={() => startEdit(entry)}
-                          title={`${entry.habitLabel}${entry.textValue ? ` · ${entry.textValue}` : ""}`}
-                          className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--surface-alt)] text-[var(--text-muted)] border border-[var(--border)] hover:opacity-80 transition-colors"
-                        >
-                          {entry.habitLabel} · {entry.numericValue ?? "—"}
-                        </button>
-                      ))}
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
