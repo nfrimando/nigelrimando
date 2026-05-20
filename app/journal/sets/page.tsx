@@ -14,32 +14,36 @@ function todayPH(): string {
 export default async function JournalSetsPage() {
 
   const today = todayPH();
+  const [ty, tm, td] = today.split("-").map(Number);
 
-  // All training dates (completed sets only)
-  const allDatesRaw = await db
-    .select({ date: sets.date })
-    .from(sets)
-    .where(isNotNull(sets.actual))
-    .groupBy(sets.date);
+  // Compute calendar start date upfront (depends only on today, not query results)
+  const dow = new Date(ty, tm - 1, td).getDay(); // 0=Sun
+  const daysFromMonday = dow === 0 ? 6 : dow - 1;
+  const calStartLocal = new Date(ty, tm - 1, td - daysFromMonday - 21);
+  const calStartStr = [
+    calStartLocal.getFullYear(),
+    String(calStartLocal.getMonth() + 1).padStart(2, "0"),
+    String(calStartLocal.getDate()).padStart(2, "0"),
+  ].join("-");
+
+  // All 6 queries in parallel
+  const [allDatesRaw, totalSetsResult, latestSetResult, activityRaw, padelDatesRaw, allExercises] =
+    await Promise.all([
+      db.select({ date: sets.date }).from(sets).where(isNotNull(sets.actual)).groupBy(sets.date),
+      db.select({ totalSets: count() }).from(sets).where(isNotNull(sets.actual)),
+      db.select({ block: sets.block, week: sets.week }).from(sets).where(isNotNull(sets.actual)).orderBy(desc(sets.date), desc(sets.id)).limit(1),
+      db.select({ date: sets.date, setCount: count() }).from(sets).where(and(isNotNull(sets.actual), gte(sets.date, calStartStr))).groupBy(sets.date),
+      db.select({ date: padelSets.date }).from(padelSets).where(gte(padelSets.date, calStartStr)).groupBy(padelSets.date),
+      db.select({ id: exercises.id, name: exercises.name }).from(exercises).orderBy(asc(exercises.name)),
+    ]);
+
+  const { totalSets } = totalSetsResult[0];
+  const latestSet = latestSetResult[0];
+
   const allTrainingDates = new Set(allDatesRaw.map((r) => r.date));
   const totalTrainingDays = allTrainingDates.size;
 
-  // Total completed sets
-  const [{ totalSets }] = await db
-    .select({ totalSets: count() })
-    .from(sets)
-    .where(isNotNull(sets.actual));
-
-  // Most recent block + week
-  const [latestSet] = await db
-    .select({ block: sets.block, week: sets.week })
-    .from(sets)
-    .where(isNotNull(sets.actual))
-    .orderBy(desc(sets.date), desc(sets.id))
-    .limit(1);
-
   // Training dates within the past year (for the daily workout selector)
-  const [ty, tm, td] = today.split("-").map(Number);
   const oneYearAgoLocal = new Date(ty - 1, tm - 1, td);
   const oneYearAgoStr = [
     oneYearAgoLocal.getFullYear(),
@@ -66,30 +70,6 @@ export default async function JournalSetsPage() {
     );
   }
 
-  // Calendar: last 4 weeks as a Mon–Sun grid
-  const dow = new Date(ty, tm - 1, td).getDay(); // 0=Sun
-  const daysFromMonday = dow === 0 ? 6 : dow - 1;
-
-  // Build calStartStr using local Date arithmetic (not toISOString)
-  const calStartLocal = new Date(ty, tm - 1, td - daysFromMonday - 21);
-  const calStartStr = [
-    calStartLocal.getFullYear(),
-    String(calStartLocal.getMonth() + 1).padStart(2, "0"),
-    String(calStartLocal.getDate()).padStart(2, "0"),
-  ].join("-");
-
-  const [activityRaw, padelDatesRaw] = await Promise.all([
-    db
-      .select({ date: sets.date, setCount: count() })
-      .from(sets)
-      .where(and(isNotNull(sets.actual), gte(sets.date, calStartStr)))
-      .groupBy(sets.date),
-    db
-      .select({ date: padelSets.date })
-      .from(padelSets)
-      .where(gte(padelSets.date, calStartStr))
-      .groupBy(padelSets.date),
-  ]);
   const activityMap = new Map(activityRaw.map((r) => [r.date, r.setCount]));
   const padelDates = new Set(padelDatesRaw.map((r) => r.date));
 
@@ -108,12 +88,6 @@ export default async function JournalSetsPage() {
       isFuture: ds > today,
     });
   }
-
-  // All exercises for the explorer dropdown
-  const allExercises = await db
-    .select({ id: exercises.id, name: exercises.name })
-    .from(exercises)
-    .orderBy(asc(exercises.name));
 
   return (
     <div className="min-h-screen bg-[var(--bg)] px-4 py-8 sm:py-12">

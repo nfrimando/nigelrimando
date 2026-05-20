@@ -300,6 +300,38 @@ export default async function HabitsJournalPage({
     daysSinceLast = diffDays(today, lastEntryDate);
   }
 
+  // Primary stat — type-dependent
+  const loggedEntries = calendarEntries.filter((e) => e.numericValue !== null);
+  let primaryStatLabel = "";
+  let primaryStatValue = "—";
+  let primaryStatSub: string | undefined;
+
+  if (selectedHabit.valueType === "binary") {
+    primaryStatLabel = "Completion Rate";
+    const done = loggedEntries.filter((e) => (e.numericValue ?? 0) >= 1).length;
+    const total = loggedEntries.length;
+    if (total > 0) {
+      primaryStatValue = `${Math.round((done / total) * 100)}%`;
+      primaryStatSub = `${done} of ${total} logged days`;
+    }
+  } else if (selectedHabit.valueType === "scaled") {
+    primaryStatLabel = "Avg Score";
+    const scored = loggedEntries.filter((e) => (e.numericValue ?? 0) > 0);
+    if (scored.length > 0) {
+      const avg = scored.reduce((sum, e) => sum + (e.numericValue ?? 0), 0) / scored.length;
+      primaryStatValue = avg % 1 === 0 ? String(avg) : avg.toFixed(1);
+      primaryStatSub = `across ${scored.length} logged days`;
+    }
+  } else {
+    // count
+    primaryStatLabel = "Total";
+    const total = loggedEntries.reduce((sum, e) => sum + (e.numericValue ?? 0), 0);
+    if (loggedEntries.length > 0) {
+      primaryStatValue = total % 1 === 0 ? String(total) : total.toFixed(1);
+      primaryStatSub = "past 12 months";
+    }
+  }
+
 
   return (
     <div className="min-h-screen bg-[var(--bg)] px-4 py-8 sm:py-12">
@@ -332,7 +364,12 @@ export default async function HabitsJournalPage({
         )}
 
         {/* Stat cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard
+            label={primaryStatLabel}
+            value={primaryStatValue}
+            sub={primaryStatSub}
+          />
           <StatCard
             label="Logged (12mo)"
             value={daysLogged365.toLocaleString()}

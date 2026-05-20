@@ -37,7 +37,10 @@ export const sets = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`),
   },
-  (t) => [index("idx_sets_date").on(t.date)],
+  (t) => [
+    index("idx_sets_date").on(t.date),
+    index("idx_sets_exercise_id").on(t.exerciseId),
+  ],
 );
 
 export type Exercise = typeof exercises.$inferSelect;
@@ -85,7 +88,14 @@ export const padelSets = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`),
   },
-  (t) => [index("idx_padel_sets_date").on(t.date)],
+  (t) => [
+    index("idx_padel_sets_date").on(t.date),
+    index("idx_padel_sets_match_id_set").on(t.matchId, t.setNumber),
+    index("idx_padel_sets_teammate_left").on(t.teammateLeft),
+    index("idx_padel_sets_teammate_right").on(t.teammateRight),
+    index("idx_padel_sets_opponent_left").on(t.opponentLeft),
+    index("idx_padel_sets_opponent_right").on(t.opponentRight),
+  ],
 );
 
 export type Person = typeof persons.$inferSelect;
@@ -158,7 +168,10 @@ export const transports = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`),
   },
-  (t) => [index("idx_transports_date").on(t.date)],
+  (t) => [
+    index("idx_transports_date").on(t.date),
+    index("idx_transports_event_type_mode").on(t.eventType, t.mode),
+  ],
 );
 
 export type Transport = typeof transports.$inferSelect;

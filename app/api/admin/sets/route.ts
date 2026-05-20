@@ -23,24 +23,11 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q")?.trim() ?? "";
   const offset = (page - 1) * limit;
 
-  let exerciseIds: number[] | null = null;
-  if (q) {
-    const matches = await db
-      .select({ id: exercises.id })
-      .from(exercises)
-      .where(like(exercises.name, `%${q}%`));
-    exerciseIds = matches.map((e) => e.id);
-    if (exerciseIds.length === 0) {
-      return NextResponse.json({ data: [], total: 0, page, totalPages: 0 });
-    }
-  }
-
-  const baseCondition = exerciseIds ? inArray(sets.exerciseId, exerciseIds) : undefined;
-
   const rows = await db
     .select({ ...getTableColumns(sets), total: sql<number>`COUNT(*) OVER()` })
     .from(sets)
-    .where(baseCondition)
+    .innerJoin(exercises, eq(sets.exerciseId, exercises.id))
+    .where(q ? like(exercises.name, `%${q}%`) : undefined)
     .orderBy(desc(sets.date), desc(sets.createdAt))
     .limit(limit)
     .offset(offset);

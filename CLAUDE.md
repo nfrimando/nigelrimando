@@ -7,16 +7,20 @@ Auth: Clerk (for private routes).
 
 # Current Phase
 
-Phase 1 — Public homepage (resume/portfolio). No auth or DB needed yet.
+Phase 4 — Journaling system, admin dashboard, and DB are live. Homepage is still the public entry point.
 
 # Stack
 
 - Next.js 14+ with App Router
 - TypeScript
 - Tailwind CSS
-- Turso + Drizzle ORM (not wired up yet)
-- Clerk (not wired up yet)
+- Turso + Drizzle ORM
+- iron-session (auth for protected routes)
 - Hosted on Vercel
+
+# Auth
+
+iron-session protects all `/admin/*` and `/api/admin/*` routes. Session secret is the `SESSION_SECRET` env var. No Clerk.
 
 # Timezone
 
@@ -168,20 +172,36 @@ Live on homepage (`#stream`). A horizontally scrollable feed of mixed content, s
 # Folder Structure
 
 app/
-layout.tsx ← root layout, global fonts/styles
-page.tsx ← homepage (public resume)
+  layout.tsx, page.tsx       ← root + homepage (public)
+  login/                     ← session login
+  admin/                     ← protected dashboard
+  journal/
+    sets/                    ← workout log
+    padel/                   ← padel analytics
+    habits/                  ← habit tracker
+    ebike/                   ← e-bike trips
+  api/
+    admin/*                  ← CRUD routes (session-protected)
+    journal/*                ← data queries
+    visitor-messages/        ← public contact
 components/
-ui/ ← reusable primitives (buttons, cards, etc.)
+  ui/                        ← reusable primitives (buttons, cards, etc.)
 public/
-assets/ ← images, icons
+  assets/                    ← images, icons
 lib/
-db.ts ← Turso client (scaffold only for now)
+  db.ts                      ← Turso + Drizzle client
+  schema.ts                  ← 11 tables (exercises, sets, padel, habits, thoughts, etc.)
+  session.ts                 ← iron-session config
+  content-stream.ts          ← Medium + thoughts aggregator
+  sources/
+    medium.ts                ← RSS parser (live)
+    thoughts.ts              ← stub (will query thoughts table)
 
 # Environment Variables
 
 TURSO_DATABASE_URL=
 TURSO_AUTH_TOKEN=
-(Not needed for Phase 1 — leave blank)
+SESSION_SECRET=
 
 # Deployment
 
@@ -191,6 +211,6 @@ TURSO_AUTH_TOKEN=
 # Phases
 
 - [x] Phase 1: Homepage (who I am)
-- [ ] Phase 2: Exercise log page (from Google Sheets)
-- [ ] Phase 3: Journal + thoughts (private, Clerk-protected)
-- [ ] Phase 4: Daily log tracker (Turso DB)
+- [x] Phase 2: Exercise log (sets, padel, ebike)
+- [x] Phase 3: Journal + habits (iron-session protected)
+- [x] Phase 4: Daily log tracker (Turso DB, 11 tables)

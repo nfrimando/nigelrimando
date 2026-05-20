@@ -4,7 +4,8 @@ import { cookies } from "next/headers";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { db } from "@/lib/db";
 import { padelSets, persons } from "@/lib/schema";
-import { desc, asc, getTableColumns, like, or, inArray, sql } from "drizzle-orm";
+import { desc, asc, eq, getTableColumns, like, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 
 async function requireAuth() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
@@ -23,34 +24,34 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q")?.trim() ?? "";
   const offset = (page - 1) * limit;
 
-  let matchingPersonIds: number[] = [];
-  if (q) {
-    const matched = await db
-      .select({ id: persons.id })
-      .from(persons)
-      .where(or(like(persons.name, `%${q}%`), like(persons.nickname, `%${q}%`)));
-    matchingPersonIds = matched.map((p) => p.id);
-  }
-
-  const condition = q
-    ? or(
-        like(padelSets.venue, `%${q}%`),
-        like(padelSets.format, `%${q}%`),
-        ...(matchingPersonIds.length > 0
-          ? [
-              inArray(padelSets.teammateLeft, matchingPersonIds),
-              inArray(padelSets.teammateRight, matchingPersonIds),
-              inArray(padelSets.opponentLeft, matchingPersonIds),
-              inArray(padelSets.opponentRight, matchingPersonIds),
-            ]
-          : []),
-      )
-    : undefined;
+  const tl = alias(persons, "tl");
+  const tr = alias(persons, "tr");
+  const ol = alias(persons, "ol");
+  const or2 = alias(persons, "or2");
 
   const rows = await db
     .select({ ...getTableColumns(padelSets), total: sql<number>`COUNT(*) OVER()` })
     .from(padelSets)
-    .where(condition)
+    .leftJoin(tl, eq(padelSets.teammateLeft, tl.id))
+    .leftJoin(tr, eq(padelSets.teammateRight, tr.id))
+    .leftJoin(ol, eq(padelSets.opponentLeft, ol.id))
+    .leftJoin(or2, eq(padelSets.opponentRight, or2.id))
+    .where(
+      q
+        ? or(
+            like(padelSets.venue, `%${q}%`),
+            like(padelSets.format, `%${q}%`),
+            like(tl.name, `%${q}%`),
+            like(tl.nickname, `%${q}%`),
+            like(tr.name, `%${q}%`),
+            like(tr.nickname, `%${q}%`),
+            like(ol.name, `%${q}%`),
+            like(ol.nickname, `%${q}%`),
+            like(or2.name, `%${q}%`),
+            like(or2.nickname, `%${q}%`),
+          )
+        : undefined,
+    )
     .orderBy(desc(padelSets.matchId), asc(padelSets.setNumber))
     .limit(limit)
     .offset(offset);

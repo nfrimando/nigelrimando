@@ -4,6 +4,8 @@ import ProjectCard from "@/components/ProjectCard";
 import { db } from "@/lib/db";
 import { sets, padelSets, transports, habitEntries } from "@/lib/schema";
 import { and, count, desc, eq, sql } from "drizzle-orm";
+
+export const revalidate = 3600;
 import { Dumbbell } from "lucide-react";
 import { getContentStream } from "@/lib/content-stream";
 import type { ContentItem } from "@/lib/content-stream";
