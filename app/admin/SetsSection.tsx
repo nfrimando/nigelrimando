@@ -352,7 +352,9 @@ export default function SetsSection() {
                                 Log actual
                               </button>
                             ) : (
-                              <span className="text-xs text-[var(--text)] font-medium">Actual: {s.actual}</span>
+                              <span className={`text-xs font-medium ${s.planned != null && s.actual != null && Number(s.actual) < Number(s.planned) ? "text-red-500" : "text-[var(--text)]"}`}>
+                                Actual: {s.actual}
+                              </span>
                             )}
                           </div>
                           <div className="flex gap-3">
@@ -430,7 +432,9 @@ export default function SetsSection() {
                               Log
                             </button>
                           ) : (
-                            <span className="text-[var(--text-muted)]">{s.actual}</span>
+                            <span className={s.planned != null && s.actual != null && Number(s.actual) < Number(s.planned) ? "text-red-500" : "text-[var(--text-muted)]"}>
+                              {s.actual}
+                            </span>
                           )}
                         </td>
                         <td className="py-2 pr-4 text-[var(--text-muted)]">{s.notes ?? "—"}</td>
