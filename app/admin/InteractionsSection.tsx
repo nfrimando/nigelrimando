@@ -34,13 +34,13 @@ function Spinner({ light }: { light?: boolean }) {
 
 function Modal({ title, children, onClose, wide }: { title: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/30" onClick={onClose}>
       <div
-        className={`bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6 w-full shadow-lg ${wide ? "max-w-4xl" : "max-w-lg"}`}
+        className={`bg-[var(--surface)] rounded-[20px] border border-[var(--border)] w-full shadow-lg flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] ${wide ? "max-w-4xl" : "max-w-lg"}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="font-heading font-bold text-base text-[var(--text)] mb-4">{title}</h3>
-        {children}
+        <h3 className="font-heading font-bold text-base text-[var(--text)] px-6 pt-6 pb-4 shrink-0">{title}</h3>
+        <div className="overflow-y-auto px-6 pb-6 flex flex-col gap-3">{children}</div>
       </div>
     </div>
   );
@@ -479,7 +479,8 @@ export default function InteractionsSection() {
       {showAddModal && (
         <Modal title="Add interactions" onClose={() => setShowAddModal(false)} wide>
           <form onSubmit={handleAdd} className="flex flex-col gap-3">
-            <div className="grid grid-cols-[120px_1fr_70px_80px_1fr_28px] gap-x-2 gap-y-1 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide pb-1 border-b border-[var(--border)]">
+            {/* Desktop column headers */}
+            <div className="hidden sm:grid grid-cols-[120px_1fr_70px_80px_1fr_28px] gap-x-2 gap-y-1 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide pb-1 border-b border-[var(--border)]">
               <span>Date</span>
               <span>Person</span>
               <span>Rank</span>
@@ -487,54 +488,92 @@ export default function InteractionsSection() {
               <span>Note</span>
               <span />
             </div>
+
             {rows.map((row, i) => (
-              <div key={i} className="grid grid-cols-[120px_1fr_70px_80px_1fr_28px] gap-x-2 items-center">
-                <input
-                  type="date"
-                  value={row.entryDate}
-                  onChange={(e) => updateRow(i, { entryDate: e.target.value })}
-                  required
-                  className={inputClass}
-                />
-                <PersonCombobox
-                  persons={persons}
-                  value={row.personId}
-                  onChange={(v) => updateRow(i, { personId: v })}
-                />
-                <input
-                  type="number"
-                  value={row.rank}
-                  onChange={(e) => updateRow(i, { rank: e.target.value })}
-                  placeholder="—"
-                  className={inputClass}
-                />
-                <input
-                  type="number"
-                  value={row.sentiment}
-                  onChange={(e) => updateRow(i, { sentiment: e.target.value })}
-                  placeholder="—"
-                  min={-5}
-                  max={5}
-                  className={inputClass}
-                />
-                <input
-                  type="text"
-                  value={row.note}
-                  onChange={(e) => updateRow(i, { note: e.target.value })}
-                  placeholder="Note…"
-                  className={inputClass}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeRow(i)}
-                  disabled={rows.length === 1}
-                  className="text-[var(--text-muted)] hover:text-[var(--warm)] disabled:opacity-0 text-sm leading-none"
-                  aria-label="Remove row"
-                >
-                  ×
-                </button>
+              <div key={i}>
+                {/* Mobile: stacked card */}
+                <div className="sm:hidden flex flex-col gap-3 p-3 rounded-[14px] bg-[var(--surface-alt)] border border-[var(--border)]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Entry {i + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeRow(i)}
+                      disabled={rows.length === 1}
+                      className="text-[var(--text-muted)] hover:text-[var(--warm)] disabled:opacity-0 text-base leading-none"
+                      aria-label="Remove row"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <Field label="Date">
+                    <input type="date" value={row.entryDate} onChange={(e) => updateRow(i, { entryDate: e.target.value })} required className={inputClass} />
+                  </Field>
+                  <Field label="Person">
+                    <PersonCombobox persons={persons} value={row.personId} onChange={(v) => updateRow(i, { personId: v })} />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Rank">
+                      <input type="number" value={row.rank} onChange={(e) => updateRow(i, { rank: e.target.value })} placeholder="—" className={inputClass} />
+                    </Field>
+                    <Field label="Sentiment">
+                      <input type="number" value={row.sentiment} onChange={(e) => updateRow(i, { sentiment: e.target.value })} placeholder="—" min={-5} max={5} className={inputClass} />
+                    </Field>
+                  </div>
+                  <Field label="Note">
+                    <input type="text" value={row.note} onChange={(e) => updateRow(i, { note: e.target.value })} placeholder="Note…" className={inputClass} />
+                  </Field>
+                </div>
+
+                {/* Desktop: grid row */}
+                <div className="hidden sm:grid grid-cols-[120px_1fr_70px_80px_1fr_28px] gap-x-2 items-center">
+                  <input
+                    type="date"
+                    value={row.entryDate}
+                    onChange={(e) => updateRow(i, { entryDate: e.target.value })}
+                    required
+                    className={inputClass}
+                  />
+                  <PersonCombobox
+                    persons={persons}
+                    value={row.personId}
+                    onChange={(v) => updateRow(i, { personId: v })}
+                  />
+                  <input
+                    type="number"
+                    value={row.rank}
+                    onChange={(e) => updateRow(i, { rank: e.target.value })}
+                    placeholder="—"
+                    className={inputClass}
+                  />
+                  <input
+                    type="number"
+                    value={row.sentiment}
+                    onChange={(e) => updateRow(i, { sentiment: e.target.value })}
+                    placeholder="—"
+                    min={-5}
+                    max={5}
+                    className={inputClass}
+                  />
+                  <input
+                    type="text"
+                    value={row.note}
+                    onChange={(e) => updateRow(i, { note: e.target.value })}
+                    placeholder="Note…"
+                    className={inputClass}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeRow(i)}
+                    disabled={rows.length === 1}
+                    className="text-[var(--text-muted)] hover:text-[var(--warm)] disabled:opacity-0 text-sm leading-none"
+                    aria-label="Remove row"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             ))}
+
             <button
               type="button"
               onClick={addRow}
@@ -557,7 +596,7 @@ export default function InteractionsSection() {
       {editingId !== null && (
         <Modal title="Edit interaction" onClose={() => setEditingId(null)}>
           <form onSubmit={handleEdit} className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Date">
                 <input
                   type="date"
