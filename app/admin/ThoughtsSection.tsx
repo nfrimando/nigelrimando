@@ -11,24 +11,45 @@ function Spinner({ light }: { light?: boolean }) {
   );
 }
 
-function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+function Modal({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children: React.ReactNode;
+  onClose: () => void;
+}) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30"
+      onClick={onClose}
+    >
       <div
         className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6 w-full max-w-lg shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="font-heading font-bold text-base text-[var(--text)] mb-4">{title}</h3>
+        <h3 className="font-heading font-bold text-base text-[var(--text)] mb-4">
+          {title}
+        </h3>
         {children}
       </div>
     </div>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">{label}</label>
+      <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
+        {label}
+      </label>
       {children}
     </div>
   );
@@ -42,11 +63,22 @@ const cancelClass =
   "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200";
 
 const PAGE_SIZE = 25;
-const THOUGHT_TYPES = ["mood", "reflection", "idea", "goal", "gratitude", "rant", "other"];
+const THOUGHT_TYPES = [
+  "mood",
+  "reflection",
+  "idea",
+  "goal",
+  "note",
+  "gratitude",
+  "rant",
+  "other",
+];
 
 type FormState = { entryDate: string; thought: string; type: string };
 
-const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
+const today = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Manila",
+}).format(new Date());
 const defaultForm: FormState = { entryDate: today, thought: "", type: "" };
 
 export default function ThoughtsSection() {
@@ -70,7 +102,10 @@ export default function ThoughtsSection() {
   async function fetchPage(p: number, q: string) {
     setFetching(true);
     try {
-      const params = new URLSearchParams({ page: String(p), limit: String(PAGE_SIZE) });
+      const params = new URLSearchParams({
+        page: String(p),
+        limit: String(PAGE_SIZE),
+      });
       if (q) params.set("q", q);
       const res = await fetch(`/api/admin/thoughts?${params}`);
       if (res.ok) {
@@ -129,7 +164,11 @@ export default function ThoughtsSection() {
 
   function startEdit(t: Thought) {
     setEditingId(t.id);
-    setEditForm({ entryDate: t.entryDate, thought: t.thought, type: t.type ?? "" });
+    setEditForm({
+      entryDate: t.entryDate,
+      thought: t.thought,
+      type: t.type ?? "",
+    });
     setEditError("");
   }
 
@@ -179,8 +218,7 @@ export default function ThoughtsSection() {
         {saveError && <p className="text-sm text-red-500 mb-3">{saveError}</p>}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="font-heading font-bold text-base text-[var(--text)] flex items-center gap-2">
-            Thoughts ({total})
-            {fetching && <Spinner />}
+            Thoughts ({total}){fetching && <Spinner />}
           </h2>
           <div className="flex items-center gap-3">
             <input
@@ -188,12 +226,18 @@ export default function ThoughtsSection() {
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
               onBlur={(e) => commitSearch(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") commitSearch(search); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitSearch(search);
+              }}
               placeholder="Search…"
               className={`${inputClass} max-w-[180px]`}
             />
             <button
-              onClick={() => { setForm(defaultForm); setAddError(""); setShowAddModal(true); }}
+              onClick={() => {
+                setForm(defaultForm);
+                setAddError("");
+                setShowAddModal(true);
+              }}
               className={submitClass}
             >
               + Add thought
@@ -217,13 +261,28 @@ export default function ThoughtsSection() {
                 </thead>
                 <tbody>
                   {data.map((t) => (
-                    <tr key={t.id} className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors" onClick={() => startEdit(t)}>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{t.entryDate}</td>
-                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap">{t.type ?? "—"}</td>
-                      <td className="py-2 pr-4 text-[var(--text)] max-w-md">{t.thought}</td>
+                    <tr
+                      key={t.id}
+                      className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors"
+                      onClick={() => startEdit(t)}
+                    >
+                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">
+                        {t.entryDate}
+                      </td>
+                      <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap">
+                        {t.type ?? "—"}
+                      </td>
+                      <td className="py-2 pr-4 text-[var(--text)] max-w-md">
+                        {t.thought}
+                      </td>
                       <td className="py-2" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-2">
-                          <button onClick={() => handleDelete(t.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
+                          <button
+                            onClick={() => handleDelete(t.id)}
+                            className="text-xs text-[var(--warm)] hover:underline"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -233,11 +292,21 @@ export default function ThoughtsSection() {
             </div>
             {totalPages > 1 && (
               <div className="flex items-center gap-4 mt-4">
-                <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
+                <button
+                  onClick={() => goToPage(page - 1)}
+                  disabled={page <= 1}
+                  className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   ← Prev
                 </button>
-                <span className="text-sm text-[var(--text-muted)]">Page {page} of {totalPages}</span>
-                <button onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
+                <span className="text-sm text-[var(--text-muted)]">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => goToPage(page + 1)}
+                  disabled={page >= totalPages}
+                  className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   Next →
                 </button>
               </div>
@@ -254,7 +323,9 @@ export default function ThoughtsSection() {
                 <input
                   type="date"
                   value={form.entryDate}
-                  onChange={(e) => setForm({ ...form, entryDate: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, entryDate: e.target.value })
+                  }
                   required
                   className={inputClass}
                 />
@@ -266,7 +337,11 @@ export default function ThoughtsSection() {
                   className={inputClass}
                 >
                   <option value="">— none —</option>
-                  {THOUGHT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {THOUGHT_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
                 </select>
               </Field>
             </div>
@@ -282,11 +357,21 @@ export default function ThoughtsSection() {
             </Field>
             {addError && <p className="text-sm text-red-500">{addError}</p>}
             <div className="flex gap-3 pt-1">
-              <button type="submit" disabled={addLoading} className={`${submitClass} inline-flex items-center gap-2`}>
+              <button
+                type="submit"
+                disabled={addLoading}
+                className={`${submitClass} inline-flex items-center gap-2`}
+              >
                 {addLoading && <Spinner light />}
                 {addLoading ? "Adding…" : "Add thought"}
               </button>
-              <button type="button" onClick={() => setShowAddModal(false)} className={cancelClass}>Cancel</button>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className={cancelClass}
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </Modal>
@@ -300,7 +385,9 @@ export default function ThoughtsSection() {
                 <input
                   type="date"
                   value={editForm.entryDate}
-                  onChange={(e) => setEditForm({ ...editForm, entryDate: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, entryDate: e.target.value })
+                  }
                   required
                   className={inputClass}
                 />
@@ -308,18 +395,26 @@ export default function ThoughtsSection() {
               <Field label="Type (optional)">
                 <select
                   value={editForm.type}
-                  onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, type: e.target.value })
+                  }
                   className={inputClass}
                 >
                   <option value="">— none —</option>
-                  {THOUGHT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {THOUGHT_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
                 </select>
               </Field>
             </div>
             <Field label="Thought">
               <textarea
                 value={editForm.thought}
-                onChange={(e) => setEditForm({ ...editForm, thought: e.target.value })}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, thought: e.target.value })
+                }
                 required
                 rows={4}
                 className={`${inputClass} resize-y`}
@@ -327,8 +422,16 @@ export default function ThoughtsSection() {
             </Field>
             {editError && <p className="text-sm text-red-500">{editError}</p>}
             <div className="flex gap-3 pt-1">
-              <button type="submit" className={submitClass}>Save changes</button>
-              <button type="button" onClick={() => setEditingId(null)} className={cancelClass}>Cancel</button>
+              <button type="submit" className={submitClass}>
+                Save changes
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingId(null)}
+                className={cancelClass}
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </Modal>
