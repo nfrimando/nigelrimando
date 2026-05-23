@@ -174,7 +174,6 @@ function ExpenseForm({
         <Field label="Amount (₱)">
           <input
             type="number"
-            min="0"
             step="0.01"
             value={form.amount}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
