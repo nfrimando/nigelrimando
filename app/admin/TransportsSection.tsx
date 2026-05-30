@@ -134,28 +134,32 @@ function TransportForm({
           </select>
         </Field>
         <Field label="Mode (optional)">
-          <select
+          <input
+            type="text"
+            list={`${idPrefix}-modes`}
             value={form.mode}
             onChange={(e) => setForm({ ...form, mode: e.target.value })}
+            placeholder="e.g. ebike"
             className={inputClass}
-          >
-            <option value="">— none —</option>
-            {MODES.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+            autoComplete="off"
+          />
+          <datalist id={`${idPrefix}-modes`}>
+            {MODES.map((m) => <option key={m} value={m} />)}
+          </datalist>
         </Field>
         <Field label="Item (optional)">
-          <select
+          <input
+            type="text"
+            list={`${idPrefix}-items`}
             value={form.item}
             onChange={(e) => setForm({ ...form, item: e.target.value })}
+            placeholder="e.g. helmet"
             className={inputClass}
-          >
-            <option value="">— none —</option>
-            {ITEMS.map((i) => (
-              <option key={i} value={i}>{i}</option>
-            ))}
-          </select>
+            autoComplete="off"
+          />
+          <datalist id={`${idPrefix}-items`}>
+            {ITEMS.map((i) => <option key={i} value={i} />)}
+          </datalist>
         </Field>
         <Field label="Start time (optional)">
           <input
