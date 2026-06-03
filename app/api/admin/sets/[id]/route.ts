@@ -22,7 +22,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await req.json();
-  const { date, block, week, exerciseId, planned, actual, measure, value, notes } = body;
+  const { date, block, week, exerciseId, planned, actual, measure, value, notes, setOrder } = body;
 
   const fields: Record<string, unknown> = { updatedAt: sql`(unixepoch())` };
   if (date !== undefined) fields.date = date;
@@ -34,6 +34,7 @@ export async function PATCH(
   if (measure !== undefined) fields.measure = measure || null;
   if (value !== undefined) fields.value = value === "" || value === null ? null : Number(value);
   if (notes !== undefined) fields.notes = notes || null;
+  if (setOrder !== undefined) fields.setOrder = setOrder === "" || setOrder === null ? null : Number(setOrder);
 
   const [row] = await db.update(sets).set(fields).where(eq(sets.id, Number(id))).returning();
   return NextResponse.json(row);

@@ -43,6 +43,12 @@ const cancelClass =
 
 const PAGE_SIZE = 200;
 
+function adjustScale(val: string, delta: number): string {
+  const current = parseFloat(val) || 0;
+  const adjusted = Math.min(1, Math.max(0, current + delta));
+  return (Math.round(adjusted * 10) / 10).toFixed(1);
+}
+
 function formatDate(dateStr: string): { long: string; day: string } {
   const [y, m, d] = dateStr.split("-").map(Number);
   const date = new Date(y, m - 1, d);
@@ -264,23 +270,52 @@ export default function HabitEntriesSection() {
   const advanceStepRef = useRef(advanceStep);
   advanceStepRef.current = advanceStep;
 
+  const countInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!showLogModal || !currentHabit) return;
+    if (currentHabit.valueType === "count") {
+      countInputRef.current?.focus();
+    } else if (currentHabit.valueType === "scaled") {
+      setCurrentLogForm((f) => (f.numericValue === "" ? { ...f, numericValue: "0" } : f));
+    }
+  }, [logStep, showLogModal, currentHabit?.valueType]);
+
   useEffect(() => {
     if (!showLogModal || !currentHabit) return;
     function handleKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement;
-      const isButton = target.tagName === "BUTTON";
       const isInput = target.tagName === "INPUT";
       if (logLoading) return;
-      if (e.key === "Enter" && !isButton) {
+      if (e.key === "Enter") {
         e.preventDefault();
         advanceStepRef.current(true);
-      } else if (!isButton && !isInput && currentHabit.valueType === "binary") {
-        if (e.key === "1") {
-          e.preventDefault();
-          setCurrentLogForm((f) => ({ ...f, numericValue: "1" }));
-        } else if (e.key === "0") {
-          e.preventDefault();
-          setCurrentLogForm((f) => ({ ...f, numericValue: "0" }));
+      } else if (!isInput) {
+        if (currentHabit.valueType === "binary") {
+          if (e.key === "1") {
+            e.preventDefault();
+            setCurrentLogForm((f) => ({ ...f, numericValue: "1" }));
+          } else if (e.key === "2") {
+            e.preventDefault();
+            setCurrentLogForm((f) => ({ ...f, numericValue: "0" }));
+          }
+        } else if (currentHabit.valueType === "scaled") {
+          if (e.key === "1") {
+            e.preventDefault();
+            setCurrentLogForm((f) => ({ ...f, numericValue: "0" }));
+          } else if (e.key === "2") {
+            e.preventDefault();
+            setCurrentLogForm((f) => ({ ...f, numericValue: "0.5" }));
+          } else if (e.key === "3") {
+            e.preventDefault();
+            setCurrentLogForm((f) => ({ ...f, numericValue: "1" }));
+          } else if (e.key === "-") {
+            e.preventDefault();
+            setCurrentLogForm((f) => ({ ...f, numericValue: adjustScale(f.numericValue, -0.1) }));
+          } else if (e.key === "+" || e.key === "=") {
+            e.preventDefault();
+            setCurrentLogForm((f) => ({ ...f, numericValue: adjustScale(f.numericValue, 0.1) }));
+          }
         }
       }
     }
@@ -578,7 +613,7 @@ export default function HabitEntriesSection() {
                         : "bg-[var(--surface-alt)] text-[var(--text-muted)] border-[var(--border)]"
                     }`}
                   >
-                    ✓ Done
+                    ✓ Done <span className="opacity-50 text-xs">[1]</span>
                   </button>
                   <button
                     type="button"
@@ -589,17 +624,47 @@ export default function HabitEntriesSection() {
                         : "bg-[var(--surface-alt)] text-[var(--text-muted)] border-[var(--border)]"
                     }`}
                   >
-                    ✗ Not done
+                    ✗ Not done <span className="opacity-50 text-xs">[2]</span>
                   </button>
+                </div>
+              ) : currentHabit.valueType === "scaled" ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentLogForm((f) => ({ ...f, numericValue: adjustScale(f.numericValue, -0.1) }))}
+                      className="w-10 h-10 flex items-center justify-center rounded-[14px] border border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-lg font-mono transition-colors shrink-0"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={currentLogForm.numericValue}
+                      onChange={(e) => setCurrentLogForm((f) => ({ ...f, numericValue: e.target.value }))}
+                      className={`${inputClass} text-center font-mono`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCurrentLogForm((f) => ({ ...f, numericValue: adjustScale(f.numericValue, 0.1) }))}
+                      className="w-10 h-10 flex items-center justify-center rounded-[14px] border border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-lg font-mono transition-colors shrink-0"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    1 → 0 &nbsp;·&nbsp; 2 → 0.5 &nbsp;·&nbsp; 3 → 1 &nbsp;·&nbsp; −/+ adjust by 0.1
+                  </p>
                 </div>
               ) : (
                 <input
+                  ref={countInputRef}
                   type="number"
-                  step={currentHabit.valueType === "scaled" ? "0.25" : "1"}
+                  step="1"
                   min="0"
                   value={currentLogForm.numericValue}
                   onChange={(e) => setCurrentLogForm((f) => ({ ...f, numericValue: e.target.value }))}
-                  placeholder={currentHabit.valueType === "scaled" ? "0 – 1" : "e.g. 3"}
+                  placeholder="e.g. 3"
                   className={inputClass}
                 />
               )}

@@ -34,6 +34,7 @@ const defaultForm = {
   measure: "kg",
   value: "",
   notes: "",
+  order: "",
 };
 
 export default function SetsSection() {
@@ -79,6 +80,14 @@ export default function SetsSection() {
   const [copyDayWeek, setCopyDayWeek] = useState("1");
   const [copyDayRows, setCopyDayRows] = useState<CopyDayRow[]>([]);
   const [copyDayLoading, setCopyDayLoading] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+  // List drag-and-drop for reordering
+  const [reorderMode, setReorderMode] = useState(false);
+  const [dragSetId, setDragSetId] = useState<number | null>(null);
+  const [dragOverSetId, setDragOverSetId] = useState<number | null>(null);
+  const [pendingOrder, setPendingOrder] = useState<Record<number, number>>({});
+  const [savingOrder, setSavingOrder] = useState(false);
 
   // Log Set modal
   const [showLogSetModal, setShowLogSetModal] = useState(false);
@@ -147,7 +156,7 @@ export default function SetsSection() {
     const res = await fetch("/api/admin/sets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, setOrder: form.order }),
     });
     setLoading(false);
     if (res.ok) {
@@ -180,6 +189,7 @@ export default function SetsSection() {
       measure: s.measure ?? "kg",
       value: s.value != null ? String(s.value) : "",
       notes: s.notes ?? "",
+      order: s.setOrder != null ? String(s.setOrder) : "",
     });
     setShowEditModal(true);
   }
@@ -197,6 +207,7 @@ export default function SetsSection() {
       planned: editForm.planned !== undefined && editForm.planned !== "" ? Number(editForm.planned) : null,
       actual: editForm.actual !== undefined && editForm.actual !== "" ? Number(editForm.actual) : null,
       notes: editForm.notes || null,
+      setOrder: editForm.order !== undefined && editForm.order !== "" ? Number(editForm.order) : null,
     };
     setSets((prev) => prev.map((s) => (s.id === id ? optimistic : s)));
     setEditingId(null);
@@ -204,7 +215,7 @@ export default function SetsSection() {
     const res = await fetch(`/api/admin/sets/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editForm),
+      body: JSON.stringify({ ...editForm, setOrder: editForm.order }),
     });
     if (res.ok) {
       const updated = await res.json();
@@ -275,6 +286,62 @@ export default function SetsSection() {
     showToast("Set duplicated as planned.");
   }
 
+  function handleSetDrop(targetSet: SetRow) {
+    if (dragSetId === null || dragSetId === targetSet.id) return;
+    const draggedSet = sets.find((s) => s.id === dragSetId);
+    if (!draggedSet || draggedSet.date !== targetSet.date) return;
+
+    const dateSets = sets.filter((s) => s.date === targetSet.date);
+    const fromIdx = dateSets.findIndex((s) => s.id === dragSetId);
+    const toIdx = dateSets.findIndex((s) => s.id === targetSet.id);
+    const reordered = [...dateSets];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+
+    const n = reordered.length;
+    const newOrders: Record<number, number> = {};
+    reordered.forEach((s, i) => { newOrders[s.id] = n - i; });
+
+    setSets((prev) => {
+      const dateIdxs = prev.reduce<number[]>((acc, s, i) => {
+        if (s.date === targetSet.date) acc.push(i);
+        return acc;
+      }, []);
+      const result = [...prev];
+      dateIdxs.forEach((arrayIdx, pos) => {
+        result[arrayIdx] = { ...reordered[pos], setOrder: newOrders[reordered[pos].id] };
+      });
+      return result;
+    });
+
+    setPendingOrder((prev) => ({ ...prev, ...newOrders }));
+    setDragSetId(null);
+    setDragOverSetId(null);
+  }
+
+  async function saveOrder() {
+    setSavingOrder(true);
+    await Promise.all(
+      Object.entries(pendingOrder).map(([id, order]) =>
+        fetch(`/api/admin/sets/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ setOrder: order }),
+        })
+      )
+    );
+    setSavingOrder(false);
+    setPendingOrder({});
+    setReorderMode(false);
+    showToast("Order saved.");
+  }
+
+  function discardOrder() {
+    setPendingOrder({});
+    setReorderMode(false);
+    fetchSets(page, search);
+  }
+
   function openCopyDay(date: string) {
     const daySets = sets.filter((s) => s.date === date);
     if (daySets.length === 0) return;
@@ -299,7 +366,7 @@ export default function SetsSection() {
     if (copyDayRows.length === 0) return;
     setCopyDayLoading(true);
     await Promise.all(
-      copyDayRows.map((row) =>
+      copyDayRows.map((row, i) =>
         fetch("/api/admin/sets", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -313,6 +380,7 @@ export default function SetsSection() {
             planned: row.planned !== "" ? row.planned : null,
             actual: null,
             notes: row.notes || null,
+            setOrder: i + 1,
           }),
         })
       )
@@ -359,6 +427,21 @@ export default function SetsSection() {
             {fetching && <Spinner />}
           </h2>
           <div className="flex items-center gap-3">
+            {reorderMode ? (
+              Object.keys(pendingOrder).length > 0 ? (
+                <>
+                  <button onClick={saveOrder} disabled={savingOrder} className={`${submitClass} inline-flex items-center gap-2`}>
+                    {savingOrder && <Spinner light />}
+                    {savingOrder ? "Saving…" : "Save order"}
+                  </button>
+                  <button onClick={discardOrder} className={cancelClass}>Discard</button>
+                </>
+              ) : (
+                <button onClick={() => setReorderMode(false)} className={cancelClass}>Done</button>
+              )
+            ) : (
+              <button onClick={() => setReorderMode(true)} className={cancelClass}>Reorder</button>
+            )}
             <input
               type="search"
               value={search}
@@ -366,7 +449,7 @@ export default function SetsSection() {
               onBlur={(e) => commitSearch(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") commitSearch(search); }}
               placeholder="Search exercise…"
-              className={`${inputClass} max-w-[180px]`}
+              className={`${inputClass} w-[110px] sm:w-[180px] max-w-[180px]`}
             />
             <button onClick={() => { setForm(defaultForm); setError(""); setShowAddModal(true); }} className={submitClass}>
               + Add set
@@ -398,13 +481,25 @@ export default function SetsSection() {
 
                   const isPlanned = s.actual == null;
                   els.push(
-                  <div key={s.id} className="py-3 cursor-pointer" onClick={() => startEdit(s)}>
+                  <div
+                    key={s.id}
+                    draggable={reorderMode}
+                    onDragStart={reorderMode ? () => setDragSetId(s.id) : undefined}
+                    onDragOver={reorderMode ? (e) => { e.preventDefault(); setDragOverSetId(s.id); } : undefined}
+                    onDrop={reorderMode ? () => handleSetDrop(s) : undefined}
+                    onDragEnd={reorderMode ? () => { setDragSetId(null); setDragOverSetId(null); } : undefined}
+                    className={`py-3 cursor-pointer transition-colors ${reorderMode && dragOverSetId === s.id && dragSetId !== s.id ? "outline outline-2 outline-[var(--accent)] rounded" : ""}`}
+                    onClick={() => startEdit(s)}
+                  >
                     <div className="min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className={`font-medium text-sm truncate ${isPlanned ? "text-[var(--text-muted)] italic" : "text-[var(--text)]"}`}>
-                            {exerciseMap[s.exerciseId] ?? s.exerciseId}
-                          </span>
-                          <span className="text-xs text-[var(--text-muted)] shrink-0">{s.date}</span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            {reorderMode && <span className="text-[var(--text-muted)] cursor-grab select-none shrink-0" onClick={(e) => e.stopPropagation()}>⠿</span>}
+                            <span className={`font-medium text-sm truncate ${isPlanned ? "text-[var(--text-muted)] italic" : "text-[var(--text)]"}`}>
+                              {exerciseMap[s.exerciseId] ?? s.exerciseId}
+                            </span>
+                          </div>
+                          <span className="text-xs text-[var(--text-muted)] shrink-0">{s.setOrder != null ? `#${s.setOrder}` : s.date}</span>
                         </div>
                         <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[var(--text-muted)] mb-2">
                           {s.block && <span>{s.block}</span>}
@@ -455,6 +550,8 @@ export default function SetsSection() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
+                    <th className="pb-2 pr-1 w-4"></th>
+                    <th className="pb-2 pr-2 font-medium w-6">#</th>
                     <th className="pb-2 pr-4 font-medium">Date</th>
                     <th className="pb-2 pr-4 font-medium">Exercise</th>
                     <th className="pb-2 pr-4 font-medium">Block</th>
@@ -477,7 +574,7 @@ export default function SetsSection() {
                       if (s.date !== lastDate) {
                         els.push(
                           <tr key={`date-${s.date}-${i}`} className="bg-[var(--surface-alt)]">
-                            <td colSpan={9} className="py-1.5 px-3">
+                            <td colSpan={11} className="py-1.5 px-3">
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">
                                   {s.date}
@@ -495,7 +592,20 @@ export default function SetsSection() {
                       }
 
                       els.push(
-                      <tr key={s.id} className={`${rowBase} cursor-pointer`} onClick={() => startEdit(s)}>
+                      <tr
+                        key={s.id}
+                        draggable={reorderMode}
+                        onDragStart={reorderMode ? () => setDragSetId(s.id) : undefined}
+                        onDragOver={reorderMode ? (e) => { e.preventDefault(); setDragOverSetId(s.id); } : undefined}
+                        onDrop={reorderMode ? () => handleSetDrop(s) : undefined}
+                        onDragEnd={reorderMode ? () => { setDragSetId(null); setDragOverSetId(null); } : undefined}
+                        className={`${rowBase} cursor-pointer transition-colors ${reorderMode && dragOverSetId === s.id && dragSetId !== s.id ? "outline outline-2 outline-[var(--accent)]" : ""}`}
+                        onClick={() => startEdit(s)}
+                      >
+                        <td className="py-2 pr-1 w-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          {reorderMode && <span className="text-[var(--text-muted)] cursor-grab select-none">⠿</span>}
+                        </td>
+                        <td className="py-2 pr-2 text-[var(--text-muted)] text-xs w-6">{s.setOrder ?? "—"}</td>
                         <td className={`py-2 pr-4 ${isPlanned ? "text-[var(--text-muted)]" : "text-[var(--text)]"}`}>{s.date}</td>
                         <td className={`py-2 pr-4 ${isPlanned ? "text-[var(--text-muted)]" : "text-[var(--text)]"}`}>{exerciseMap[s.exerciseId] ?? s.exerciseId}</td>
                         <td className="py-2 pr-4 text-[var(--text-muted)]">{s.block}</td>
@@ -592,6 +702,9 @@ export default function SetsSection() {
             <Field label="Actual">
               <input type="number" value={editForm.actual ?? ""} onChange={(e) => setEditForm({ ...editForm, actual: e.target.value })} step="any" placeholder="e.g. 4" className={inputClass} />
             </Field>
+            <Field label="Order">
+              <input type="number" value={editForm.order ?? ""} onChange={(e) => setEditForm({ ...editForm, order: e.target.value })} min={1} placeholder="e.g. 1" className={inputClass} />
+            </Field>
             <Field label="Notes (optional)">
               <input type="text" value={editForm.notes ?? ""} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Any notes" className={inputClass} />
             </Field>
@@ -638,6 +751,9 @@ export default function SetsSection() {
               </Field>
               <Field label="Actual">
                 <input type="number" value={form.actual} onChange={(e) => setForm({ ...form, actual: e.target.value })} step="any" placeholder="e.g. 4" className={inputClass} />
+              </Field>
+              <Field label="Order">
+                <input type="number" value={form.order} onChange={(e) => setForm({ ...form, order: e.target.value })} min={1} placeholder="e.g. 1" className={inputClass} />
               </Field>
               <Field label="Notes (optional)">
                 <input type="text" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any notes" className={inputClass} />
@@ -734,7 +850,8 @@ export default function SetsSection() {
             </Field>
           </div>
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[1fr_80px_90px_80px_24px] gap-2 px-1 mb-1">
+            <div className="grid grid-cols-[16px_1fr_80px_90px_80px_24px] gap-2 px-1 mb-1">
+              <span />
               <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Exercise</span>
               <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Value</span>
               <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Measure</span>
@@ -742,7 +859,25 @@ export default function SetsSection() {
               <span />
             </div>
             {copyDayRows.map((row, i) => (
-              <div key={i} className="grid grid-cols-[1fr_80px_90px_80px_24px] gap-2 items-center">
+              <div
+                key={i}
+                draggable
+                onDragStart={() => setDragIndex(i)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  if (dragIndex === null || dragIndex === i) return;
+                  setCopyDayRows((prev) => {
+                    const next = [...prev];
+                    const [moved] = next.splice(dragIndex, 1);
+                    next.splice(i, 0, moved);
+                    return next;
+                  });
+                  setDragIndex(null);
+                }}
+                onDragEnd={() => setDragIndex(null)}
+                className={`grid grid-cols-[16px_1fr_80px_90px_80px_24px] gap-2 items-center transition-opacity ${dragIndex === i ? "opacity-40" : ""}`}
+              >
+                <span className="text-[var(--text-muted)] cursor-grab select-none text-center" title="Drag to reorder">⠿</span>
                 <span className="text-sm text-[var(--text)] truncate px-1">{exerciseMap[row.exerciseId] ?? row.exerciseId}</span>
                 <input
                   type="number"
@@ -907,7 +1042,7 @@ const inputClass =
   "w-full px-3 py-2 rounded-[14px] border border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
 
 const submitClass =
-  "bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200 disabled:opacity-50";
+  "bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200 disabled:opacity-50 whitespace-nowrap shrink-0";
 
 const cancelClass =
-  "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200";
+  "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200 whitespace-nowrap shrink-0";

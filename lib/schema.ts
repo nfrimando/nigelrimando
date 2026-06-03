@@ -30,6 +30,7 @@ export const sets = sqliteTable(
     measure: text("measure"), // 'kg' | 'lbs' | 'km' | 'reps' | 'seconds' | etc.
     value: real("value"), // numeric weight/load/distance value
     notes: text("notes"),
+    setOrder: integer("set_order"),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`(unixepoch())`),

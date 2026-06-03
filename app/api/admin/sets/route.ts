@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     .from(sets)
     .innerJoin(exercises, eq(sets.exerciseId, exercises.id))
     .where(q ? like(exercises.name, `%${q}%`) : undefined)
-    .orderBy(desc(sets.date), desc(sets.createdAt))
+    .orderBy(desc(sets.date), desc(sets.setOrder), desc(sets.createdAt))
     .limit(limit)
     .offset(offset);
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { date, block, week, exerciseId, planned, actual, measure, value, notes } = body;
+  const { date, block, week, exerciseId, planned, actual, measure, value, notes, setOrder } = body;
 
   if (!date || !block || !week || !exerciseId) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
       measure: measure || null,
       value: value ? Number(value) : null,
       notes: notes || null,
+      setOrder: setOrder !== undefined && setOrder !== "" ? Number(setOrder) : null,
     })
     .returning();
 
