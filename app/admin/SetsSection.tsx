@@ -3,6 +3,14 @@
 import { useEffect, useState } from "react";
 import type { Exercise, Set as SetRow } from "@/lib/schema";
 
+type CopyDayRow = {
+  exerciseId: number;
+  value: string;
+  measure: string;
+  planned: string;
+  notes: string;
+};
+
 function Spinner({ light }: { light?: boolean }) {
   return (
     <span
@@ -62,6 +70,15 @@ export default function SetsSection() {
 
   // Dupe loading
   const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
+
+  // Copy Day modal
+  const [showCopyDayModal, setShowCopyDayModal] = useState(false);
+  const [copyDaySourceDate, setCopyDaySourceDate] = useState("");
+  const [copyDayTargetDate, setCopyDayTargetDate] = useState(today);
+  const [copyDayBlock, setCopyDayBlock] = useState("");
+  const [copyDayWeek, setCopyDayWeek] = useState("1");
+  const [copyDayRows, setCopyDayRows] = useState<CopyDayRow[]>([]);
+  const [copyDayLoading, setCopyDayLoading] = useState(false);
 
   // Log Set modal
   const [showLogSetModal, setShowLogSetModal] = useState(false);
@@ -258,6 +275,54 @@ export default function SetsSection() {
     showToast("Set duplicated as planned.");
   }
 
+  function openCopyDay(date: string) {
+    const daySets = sets.filter((s) => s.date === date);
+    if (daySets.length === 0) return;
+    const first = daySets[0];
+    setCopyDaySourceDate(date);
+    setCopyDayTargetDate(today);
+    setCopyDayBlock(first.block);
+    setCopyDayWeek(String((first.week ?? 0) + 1));
+    setCopyDayRows(
+      daySets.map((s) => ({
+        exerciseId: s.exerciseId,
+        value: s.value != null ? String(s.value) : "",
+        measure: s.measure ?? "kg",
+        planned: s.planned != null ? String(s.planned) : "",
+        notes: s.notes ?? "",
+      }))
+    );
+    setShowCopyDayModal(true);
+  }
+
+  async function handleCopyDay() {
+    if (copyDayRows.length === 0) return;
+    setCopyDayLoading(true);
+    await Promise.all(
+      copyDayRows.map((row) =>
+        fetch("/api/admin/sets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            date: copyDayTargetDate,
+            block: copyDayBlock,
+            week: copyDayWeek,
+            exerciseId: row.exerciseId,
+            measure: row.measure,
+            value: row.value !== "" ? row.value : null,
+            planned: row.planned !== "" ? row.planned : null,
+            actual: null,
+            notes: row.notes || null,
+          }),
+        })
+      )
+    );
+    setCopyDayLoading(false);
+    setShowCopyDayModal(false);
+    fetchSets(page, search);
+    showToast(`${copyDayRows.length} sets copied as planned.`);
+  }
+
   function openLogSet(s: SetRow) {
     setLogSetTarget(s);
     setLogSetValue(s.planned != null ? String(s.planned) : "");
@@ -319,8 +384,14 @@ export default function SetsSection() {
                 ({ els, lastDate }, s, i) => {
                   if (s.date !== lastDate) {
                     els.push(
-                      <div key={`date-${s.date}-${i}`} className="py-2 px-1 bg-[var(--surface-alt)]">
+                      <div key={`date-${s.date}-${i}`} className="py-2 px-1 bg-[var(--surface-alt)] flex items-center justify-between">
                         <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{s.date}</span>
+                        <button
+                          onClick={() => openCopyDay(s.date)}
+                          className="text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                        >
+                          Copy day →
+                        </button>
                       </div>
                     );
                   }
@@ -407,9 +478,17 @@ export default function SetsSection() {
                         els.push(
                           <tr key={`date-${s.date}-${i}`} className="bg-[var(--surface-alt)]">
                             <td colSpan={9} className="py-1.5 px-3">
-                              <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">
-                                {s.date}
-                              </span>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">
+                                  {s.date}
+                                </span>
+                                <button
+                                  onClick={() => openCopyDay(s.date)}
+                                  className="text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                                >
+                                  Copy day →
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -636,6 +715,74 @@ export default function SetsSection() {
               {logSetLoading ? "Saving…" : "Log set"}
             </button>
             <button onClick={() => setShowLogSetModal(false)} className={cancelClass}>Cancel</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Copy Day Modal */}
+      {showCopyDayModal && (
+        <Modal title={`Copy day — ${copyDaySourceDate}`} onClose={() => setShowCopyDayModal(false)}>
+          <div className="grid grid-cols-3 gap-3 mt-2 mb-5">
+            <Field label="Target date">
+              <input type="date" value={copyDayTargetDate} onChange={(e) => setCopyDayTargetDate(e.target.value)} className={inputClass} />
+            </Field>
+            <Field label="Block">
+              <input type="text" value={copyDayBlock} onChange={(e) => setCopyDayBlock(e.target.value)} placeholder="e.g. Strength A" className={inputClass} />
+            </Field>
+            <Field label="Week">
+              <input type="number" value={copyDayWeek} onChange={(e) => setCopyDayWeek(e.target.value)} min={1} className={inputClass} />
+            </Field>
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-[1fr_80px_90px_80px_24px] gap-2 px-1 mb-1">
+              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Exercise</span>
+              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Value</span>
+              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Measure</span>
+              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Planned</span>
+              <span />
+            </div>
+            {copyDayRows.map((row, i) => (
+              <div key={i} className="grid grid-cols-[1fr_80px_90px_80px_24px] gap-2 items-center">
+                <span className="text-sm text-[var(--text)] truncate px-1">{exerciseMap[row.exerciseId] ?? row.exerciseId}</span>
+                <input
+                  type="number"
+                  value={row.value}
+                  onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, value: e.target.value } : r))}
+                  step="any"
+                  placeholder="—"
+                  className={inputClass}
+                />
+                <select
+                  value={row.measure}
+                  onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, measure: e.target.value } : r))}
+                  className={inputClass}
+                >
+                  {MEASURES.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+                <input
+                  type="number"
+                  value={row.planned}
+                  onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, planned: e.target.value } : r))}
+                  step="any"
+                  placeholder="—"
+                  className={inputClass}
+                />
+                <button
+                  onClick={() => setCopyDayRows((prev) => prev.filter((_, j) => j !== i))}
+                  className="text-[var(--text-muted)] hover:text-red-500 transition-colors text-base leading-none"
+                  title="Remove"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-3 mt-6">
+            <button onClick={handleCopyDay} disabled={copyDayLoading || copyDayRows.length === 0} className={`${submitClass} inline-flex items-center gap-2`}>
+              {copyDayLoading && <Spinner light />}
+              {copyDayLoading ? "Copying…" : `Copy ${copyDayRows.length} sets`}
+            </button>
+            <button onClick={() => setShowCopyDayModal(false)} className={cancelClass}>Cancel</button>
           </div>
         </Modal>
       )}
