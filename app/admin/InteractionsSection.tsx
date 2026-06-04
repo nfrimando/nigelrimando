@@ -478,7 +478,16 @@ export default function InteractionsSection() {
 
       {showAddModal && (
         <Modal title="Add interactions" onClose={() => setShowAddModal(false)} wide>
-          <form onSubmit={handleAdd} className="flex flex-col gap-3">
+          <form
+            onSubmit={handleAdd}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && e.shiftKey) {
+                e.preventDefault();
+                addRow();
+              }
+            }}
+            className="flex flex-col gap-3"
+          >
             {/* Desktop column headers */}
             <div className="hidden sm:grid grid-cols-[120px_1fr_70px_80px_1fr_28px] gap-x-2 gap-y-1 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide pb-1 border-b border-[var(--border)]">
               <span>Date</span>
@@ -579,7 +588,7 @@ export default function InteractionsSection() {
               onClick={addRow}
               className="self-start text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] font-medium mt-1"
             >
-              + Add another
+              + Add another <span className="text-[var(--text-muted)] font-normal">⇧↵</span>
             </button>
             {addError && <p className="text-sm text-red-500">{addError}</p>}
             <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
