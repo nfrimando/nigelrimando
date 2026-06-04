@@ -372,6 +372,27 @@ export default function PadelSetsSection() {
     setShowAddModal(false);
   }
 
+  function openAddSetToMatch(row: PadelSet) {
+    const matchSets = rows.filter((r) => r.matchId === row.matchId);
+    const maxSetNum = Math.max(...matchSets.map((r) => r.setNumber));
+    setAddError("");
+    setCurrentMatchId(row.matchId);
+    setCurrentSetNumber(maxSetNum + 1);
+    setMatchForm({
+      date: row.date,
+      teammateLeft: String(row.teammateLeft),
+      teammateRight: String(row.teammateRight),
+      opponentLeft: String(row.opponentLeft),
+      opponentRight: String(row.opponentRight),
+      venue: row.venue ?? "",
+      format: row.format ?? "",
+      courtNumber: row.courtNumber ?? "",
+    });
+    setSetScore({ gamesWon: "", gamesLost: "", videoUrl: "", notes: "" });
+    setAddPhase("set");
+    setShowAddModal(true);
+  }
+
   function startEdit(row: PadelSet) {
     setEditingId(row.id);
     setEditForm({
@@ -601,6 +622,7 @@ export default function PadelSetsSection() {
                           </div>
                         </td>
                         <td className="py-2 flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => openAddSetToMatch(row)} className="text-xs text-[var(--accent)] hover:underline">+ Set</button>
                           <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
                         </td>
                       </tr>
@@ -813,8 +835,11 @@ export default function PadelSetsSection() {
             <span className="font-mono font-bold text-[var(--text)]">
               {currentMatchId}
             </span>
-            {addPhase === "set" && (
-              <span className="ml-4">Sets added: {currentSetNumber - 1}</span>
+            {addPhase === "set" && matchForm.date && (
+              <span className="ml-2">· {matchForm.date}</span>
+            )}
+            {addPhase === "set" && matchForm.venue && (
+              <span className="ml-2">· {matchForm.venue}</span>
             )}
           </div>
 
