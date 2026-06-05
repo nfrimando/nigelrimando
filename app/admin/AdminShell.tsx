@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import ExercisesSection from "./ExercisesSection";
 import SetsSection from "./SetsSection";
 import PadelSetsSection from "./PadelSetsSection";
@@ -52,6 +53,12 @@ export default function AdminShell() {
             >
               ← Back to Home
             </a>
+            <Link
+              href="/admin/analysis"
+              className="text-xs px-3 py-1 rounded-[14px] border border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+            >
+              Analysis
+            </Link>
           </div>
           <button
             onClick={handleSignOut}

@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { db } from "@/lib/db";
 import { expenses } from "@/lib/schema";
-import { desc, getTableColumns, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, gte, like, lte, or, sql } from "drizzle-orm";
 
 async function requireAuth() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
@@ -19,20 +19,31 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "25")));
+  const limit = Math.min(500, Math.max(1, parseInt(searchParams.get("limit") ?? "25")));
   const q = searchParams.get("q")?.trim() ?? "";
+  const from = searchParams.get("from")?.trim() ?? "";
+  const to = searchParams.get("to")?.trim() ?? "";
+  const category = searchParams.get("category")?.trim() ?? "";
   const offset = (page - 1) * limit;
 
-  const condition = q
-    ? or(
+  const conditions = [];
+  if (q) {
+    conditions.push(
+      or(
         like(expenses.date, `%${q}%`),
         like(expenses.category, `%${q}%`),
         like(expenses.subcategory, `%${q}%`),
         like(expenses.item, `%${q}%`),
         like(expenses.shop, `%${q}%`),
         like(expenses.notes, `%${q}%`),
-      )
-    : undefined;
+      ),
+    );
+  }
+  if (from) conditions.push(gte(expenses.date, from));
+  if (to) conditions.push(lte(expenses.date, to));
+  if (category) conditions.push(eq(expenses.category, category));
+
+  const condition = conditions.length > 0 ? and(...conditions) : undefined;
 
   const rows = await db
     .select({ ...getTableColumns(expenses), total: sql<number>`COUNT(*) OVER()` })

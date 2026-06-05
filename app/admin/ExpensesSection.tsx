@@ -252,6 +252,8 @@ export default function ExpensesSection() {
   const [itemSuggestions, setItemSuggestions] = useState<string[]>([]);
   const [shopSuggestions, setShopSuggestions] = useState<string[]>([]);
 
+  const [categoryFilter, setCategoryFilter] = useState("");
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState<FormState>(defaultForm);
   const [addError, setAddError] = useState("");
@@ -262,11 +264,12 @@ export default function ExpensesSection() {
   const [editError, setEditError] = useState("");
   const [saveError, setSaveError] = useState("");
 
-  async function fetchPage(p: number, q: string) {
+  async function fetchPage(p: number, q: string, cat = categoryFilter) {
     setFetching(true);
     try {
       const params = new URLSearchParams({ page: String(p), limit: String(PAGE_SIZE) });
       if (q) params.set("q", q);
+      if (cat) params.set("category", cat);
       const res = await fetch(`/api/admin/expenses?${params}`);
       if (res.ok) {
         const json = await res.json();
@@ -308,7 +311,13 @@ export default function ExpensesSection() {
   }
 
   function goToPage(p: number) {
-    fetchPage(p, search.trim());
+    fetchPage(p, search.trim(), categoryFilter);
+  }
+
+  function toggleCategoryFilter(cat: string) {
+    const next = categoryFilter === cat ? "" : cat;
+    setCategoryFilter(next);
+    fetchPage(1, search.trim(), next);
   }
 
   async function handleAdd(e: React.FormEvent) {
@@ -398,7 +407,7 @@ export default function ExpensesSection() {
     <div className="flex flex-col gap-6">
       <section className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6">
         {saveError && <p className="text-sm text-red-500 mb-3">{saveError}</p>}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
           <h2 className="font-heading font-bold text-base text-[var(--text)] flex items-center gap-2">
             Expenses ({total})
             {fetching && <Spinner />}
@@ -421,6 +430,23 @@ export default function ExpensesSection() {
             </button>
           </div>
         </div>
+        {categorySuggestions.length > 0 && (
+          <div className="flex gap-1.5 mb-4 overflow-x-auto scrollbar-none -mx-6 px-6 sm:mx-0 sm:px-0">
+            {categorySuggestions.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => toggleCategoryFilter(cat)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors shrink-0 ${
+                  categoryFilter === cat
+                    ? "bg-[var(--accent)] text-white"
+                    : "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)]"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
 
         {data.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)]">No expense entries found.</p>
