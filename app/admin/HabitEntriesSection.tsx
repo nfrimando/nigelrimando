@@ -300,15 +300,15 @@ export default function HabitEntriesSection() {
             setCurrentLogForm((f) => ({ ...f, numericValue: "0" }));
           }
         } else if (currentHabit.valueType === "scaled") {
-          if (e.key === "1") {
+          if (e.key === "0") {
             e.preventDefault();
             setCurrentLogForm((f) => ({ ...f, numericValue: "0" }));
+          } else if (e.key === "1") {
+            e.preventDefault();
+            setCurrentLogForm((f) => ({ ...f, numericValue: "1" }));
           } else if (e.key === "2") {
             e.preventDefault();
             setCurrentLogForm((f) => ({ ...f, numericValue: "0.5" }));
-          } else if (e.key === "3") {
-            e.preventDefault();
-            setCurrentLogForm((f) => ({ ...f, numericValue: "1" }));
           } else if (e.key === "-") {
             e.preventDefault();
             setCurrentLogForm((f) => ({ ...f, numericValue: adjustScale(f.numericValue, -0.1) }));
@@ -653,7 +653,7 @@ export default function HabitEntriesSection() {
                     </button>
                   </div>
                   <p className="text-xs text-[var(--text-muted)]">
-                    1 → 0 &nbsp;·&nbsp; 2 → 0.5 &nbsp;·&nbsp; 3 → 1 &nbsp;·&nbsp; −/+ adjust by 0.1
+                    0 → 0 &nbsp;·&nbsp; 1 → 1 &nbsp;·&nbsp; 2 → 0.5 &nbsp;·&nbsp; −/+ adjust by 0.1
                   </p>
                 </div>
               ) : (
