@@ -9,6 +9,7 @@ type CopyDayRow = {
   measure: string;
   planned: string;
   notes: string;
+  actual: string | null;
 };
 
 function Spinner({ light }: { light?: boolean }) {
@@ -86,8 +87,13 @@ export default function SetsSection() {
   const [reorderMode, setReorderMode] = useState(false);
   const [dragSetId, setDragSetId] = useState<number | null>(null);
   const [dragOverSetId, setDragOverSetId] = useState<number | null>(null);
+  const [dragPosition, setDragPosition] = useState<'before' | 'after'>('before');
   const [pendingOrder, setPendingOrder] = useState<Record<number, number>>({});
   const [savingOrder, setSavingOrder] = useState(false);
+
+  // Copy day modal drag-and-drop
+  const [dragIndexOver, setDragIndexOver] = useState<number | null>(null);
+  const [dragIndexPosition, setDragIndexPosition] = useState<'before' | 'after'>('before');
 
   // Log Set modal
   const [showLogSetModal, setShowLogSetModal] = useState(false);
@@ -296,7 +302,10 @@ export default function SetsSection() {
     const toIdx = dateSets.findIndex((s) => s.id === targetSet.id);
     const reordered = [...dateSets];
     const [moved] = reordered.splice(fromIdx, 1);
-    reordered.splice(toIdx, 0, moved);
+    const adjustedTo = dragPosition === 'after'
+      ? (fromIdx < toIdx ? toIdx : toIdx + 1)
+      : (fromIdx < toIdx ? toIdx - 1 : toIdx);
+    reordered.splice(Math.max(0, adjustedTo), 0, moved);
 
     const n = reordered.length;
     const newOrders: Record<number, number> = {};
@@ -357,6 +366,7 @@ export default function SetsSection() {
         measure: s.measure ?? "kg",
         planned: s.planned != null ? String(s.planned) : "",
         notes: s.notes ?? "",
+        actual: s.actual != null ? String(s.actual) : null,
       }))
     );
     setShowCopyDayModal(true);
@@ -380,7 +390,7 @@ export default function SetsSection() {
             planned: row.planned !== "" ? row.planned : null,
             actual: null,
             notes: row.notes || null,
-            setOrder: i + 1,
+            setOrder: copyDayRows.length - i,
           }),
         })
       )
@@ -485,10 +495,10 @@ export default function SetsSection() {
                     key={s.id}
                     draggable={reorderMode}
                     onDragStart={reorderMode ? () => setDragSetId(s.id) : undefined}
-                    onDragOver={reorderMode ? (e) => { e.preventDefault(); setDragOverSetId(s.id); } : undefined}
+                    onDragOver={reorderMode ? (e) => { e.preventDefault(); setDragOverSetId(s.id); const rect = e.currentTarget.getBoundingClientRect(); setDragPosition(e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'); } : undefined}
                     onDrop={reorderMode ? () => handleSetDrop(s) : undefined}
-                    onDragEnd={reorderMode ? () => { setDragSetId(null); setDragOverSetId(null); } : undefined}
-                    className={`py-3 cursor-pointer transition-colors ${reorderMode && dragOverSetId === s.id && dragSetId !== s.id ? "outline outline-2 outline-[var(--accent)] rounded" : ""}`}
+                    onDragEnd={reorderMode ? () => { setDragSetId(null); setDragOverSetId(null); setDragPosition('before'); } : undefined}
+                    className={`py-3 cursor-pointer transition-colors ${reorderMode && dragOverSetId === s.id && dragSetId !== s.id ? (dragPosition === 'before' ? "border-t-2 border-[var(--accent)]" : "border-b-2 border-[var(--accent)]") : ""}`}
                     onClick={() => startEdit(s)}
                   >
                     <div className="min-w-0">
@@ -596,10 +606,10 @@ export default function SetsSection() {
                         key={s.id}
                         draggable={reorderMode}
                         onDragStart={reorderMode ? () => setDragSetId(s.id) : undefined}
-                        onDragOver={reorderMode ? (e) => { e.preventDefault(); setDragOverSetId(s.id); } : undefined}
+                        onDragOver={reorderMode ? (e) => { e.preventDefault(); setDragOverSetId(s.id); const rect = e.currentTarget.getBoundingClientRect(); setDragPosition(e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'); } : undefined}
                         onDrop={reorderMode ? () => handleSetDrop(s) : undefined}
-                        onDragEnd={reorderMode ? () => { setDragSetId(null); setDragOverSetId(null); } : undefined}
-                        className={`${rowBase} cursor-pointer transition-colors ${reorderMode && dragOverSetId === s.id && dragSetId !== s.id ? "outline outline-2 outline-[var(--accent)]" : ""}`}
+                        onDragEnd={reorderMode ? () => { setDragSetId(null); setDragOverSetId(null); setDragPosition('before'); } : undefined}
+                        className={`${rowBase} cursor-pointer transition-colors ${reorderMode && dragOverSetId === s.id && dragSetId !== s.id ? (dragPosition === 'before' ? "border-t-2 border-[var(--accent)]" : "border-b-2 border-[var(--accent)]") : ""}`}
                         onClick={() => startEdit(s)}
                       >
                         <td className="py-2 pr-1 w-4 text-center" onClick={(e) => e.stopPropagation()}>
@@ -850,12 +860,15 @@ export default function SetsSection() {
             </Field>
           </div>
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[16px_1fr_80px_90px_80px_24px] gap-2 px-1 mb-1">
+            <div className="grid grid-cols-[16px_20px_1fr_72px_80px_72px_60px_1fr_24px] gap-2 px-1 mb-1">
               <span />
+              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">#</span>
               <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Exercise</span>
               <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Value</span>
               <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Measure</span>
               <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Planned</span>
+              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Actual</span>
+              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Notes</span>
               <span />
             </div>
             {copyDayRows.map((row, i) => (
@@ -863,21 +876,26 @@ export default function SetsSection() {
                 key={i}
                 draggable
                 onDragStart={() => setDragIndex(i)}
-                onDragOver={(e) => e.preventDefault()}
+                onDragOver={(e) => { e.preventDefault(); setDragIndexOver(i); const rect = e.currentTarget.getBoundingClientRect(); setDragIndexPosition(e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'); }}
                 onDrop={() => {
                   if (dragIndex === null || dragIndex === i) return;
                   setCopyDayRows((prev) => {
                     const next = [...prev];
                     const [moved] = next.splice(dragIndex, 1);
-                    next.splice(i, 0, moved);
+                    const insertAt = dragIndexPosition === 'after'
+                      ? (dragIndex < i ? i : i + 1)
+                      : (dragIndex < i ? i - 1 : i);
+                    next.splice(Math.max(0, insertAt), 0, moved);
                     return next;
                   });
                   setDragIndex(null);
+                  setDragIndexOver(null);
                 }}
-                onDragEnd={() => setDragIndex(null)}
-                className={`grid grid-cols-[16px_1fr_80px_90px_80px_24px] gap-2 items-center transition-opacity ${dragIndex === i ? "opacity-40" : ""}`}
+                onDragEnd={() => { setDragIndex(null); setDragIndexOver(null); }}
+                className={`grid grid-cols-[16px_20px_1fr_72px_80px_72px_60px_1fr_24px] gap-2 items-center transition-opacity ${dragIndex === i ? "opacity-40" : ""} ${dragIndexOver === i && dragIndex !== i ? (dragIndexPosition === 'before' ? "border-t-2 border-[var(--accent)]" : "border-b-2 border-[var(--accent)]") : ""}`}
               >
                 <span className="text-[var(--text-muted)] cursor-grab select-none text-center" title="Drag to reorder">⠿</span>
+                <span className="text-xs text-[var(--text-muted)] text-center">{i + 1}</span>
                 <span className="text-sm text-[var(--text)] truncate px-1">{exerciseMap[row.exerciseId] ?? row.exerciseId}</span>
                 <input
                   type="number"
@@ -899,6 +917,14 @@ export default function SetsSection() {
                   value={row.planned}
                   onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, planned: e.target.value } : r))}
                   step="any"
+                  placeholder="—"
+                  className={inputClass}
+                />
+                <span className="text-xs text-[var(--text-muted)] px-1">{row.actual ?? "—"}</span>
+                <input
+                  type="text"
+                  value={row.notes}
+                  onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, notes: e.target.value } : r))}
                   placeholder="—"
                   className={inputClass}
                 />

@@ -511,7 +511,7 @@ export default async function Home() {
             <ProjectCard
               name="Padel League PH"
               tagline="I was one of the earliest adopters of padel in the PH and we needed more people to play with. One match after another and now we run the league."
-              url="https://www.padelph.com"
+              url="https://www.padelph.org"
               images={[
                 "/assets/projects/padelph-1.webp",
                 "/assets/projects/padelph-2.webp",
