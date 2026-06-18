@@ -106,6 +106,7 @@ function PersonCombobox({
     return p ? personLabel(p) : "";
   });
   const [open, setOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   useEffect(() => {
     const p = persons.find((p) => String(p.id) === value);
@@ -119,6 +120,39 @@ function PersonCombobox({
       )
     : persons;
 
+  function selectPerson(p: Person) {
+    onChange(String(p.id));
+    setInputVal(personLabel(p));
+    setOpen(false);
+    setHighlightedIndex(-1);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      setOpen(true);
+      setHighlightedIndex(0);
+      e.preventDefault();
+      return;
+    }
+    if (!open || filtered.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((i) => (i + 1) % filtered.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((i) => (i <= 0 ? filtered.length - 1 : i - 1));
+    } else if (e.key === "Enter") {
+      if (highlightedIndex >= 0 && highlightedIndex < filtered.length) {
+        e.preventDefault();
+        selectPerson(filtered[highlightedIndex]);
+      }
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      setHighlightedIndex(-1);
+    }
+  }
+
   return (
     <div className="relative">
       <input
@@ -130,21 +164,25 @@ function PersonCombobox({
           setInputVal(e.target.value);
           onChange("");
           setOpen(true);
+          setHighlightedIndex(0);
         }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onFocus={() => {
+          setOpen(true);
+          setHighlightedIndex(0);
+        }}
+        onBlur={() => setTimeout(() => { setOpen(false); setHighlightedIndex(-1); }, 150)}
+        onKeyDown={handleKeyDown}
       />
       {open && filtered.length > 0 && (
         <ul className="absolute z-20 mt-1 w-full bg-[var(--surface)] border border-[var(--border)] rounded-[14px] shadow-lg max-h-48 overflow-y-auto">
-          {filtered.map((p) => (
+          {filtered.map((p, i) => (
             <li
               key={p.id}
-              onMouseDown={() => {
-                onChange(String(p.id));
-                setInputVal(personLabel(p));
-                setOpen(false);
-              }}
-              className="px-3 py-2 text-sm cursor-pointer hover:bg-[var(--surface-alt)] text-[var(--text)] first:rounded-t-[14px] last:rounded-b-[14px]"
+              onMouseDown={() => selectPerson(p)}
+              onMouseEnter={() => setHighlightedIndex(i)}
+              className={`px-3 py-2 text-sm cursor-pointer text-[var(--text)] first:rounded-t-[14px] last:rounded-b-[14px] ${
+                i === highlightedIndex ? "bg-[var(--surface-alt)]" : "hover:bg-[var(--surface-alt)]"
+              }`}
             >
               {personLabel(p)}
             </li>
