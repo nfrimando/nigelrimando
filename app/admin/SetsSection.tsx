@@ -847,8 +847,8 @@ export default function SetsSection() {
 
       {/* Copy Day Modal */}
       {showCopyDayModal && (
-        <Modal title={`Copy day — ${copyDaySourceDate}`} onClose={() => setShowCopyDayModal(false)}>
-          <div className="grid grid-cols-3 gap-3 mt-2 mb-5">
+        <Modal title={`Copy day — ${copyDaySourceDate}`} onClose={() => setShowCopyDayModal(false)} maxWidthClass="max-w-lg sm:max-w-3xl lg:max-w-5xl">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2 mb-5">
             <Field label="Target date">
               <input type="date" value={copyDayTargetDate} onChange={(e) => setCopyDayTargetDate(e.target.value)} className={inputClass} />
             </Field>
@@ -859,84 +859,94 @@ export default function SetsSection() {
               <input type="number" value={copyDayWeek} onChange={(e) => setCopyDayWeek(e.target.value)} min={1} className={inputClass} />
             </Field>
           </div>
+          <p className="text-xs text-[var(--text-muted)] mb-2">Drag <span className="text-[var(--text)]">⠿</span> to reorder. The order badge shows the set order each row will be saved with.</p>
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[16px_20px_1fr_72px_80px_72px_60px_1fr_24px] gap-2 px-1 mb-1">
-              <span />
-              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">#</span>
-              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Exercise</span>
-              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Value</span>
-              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Measure</span>
-              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Planned</span>
-              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Actual</span>
-              <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Notes</span>
-              <span />
-            </div>
-            {copyDayRows.map((row, i) => (
-              <div
-                key={i}
-                draggable
-                onDragStart={() => setDragIndex(i)}
-                onDragOver={(e) => { e.preventDefault(); setDragIndexOver(i); const rect = e.currentTarget.getBoundingClientRect(); setDragIndexPosition(e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'); }}
-                onDrop={() => {
-                  if (dragIndex === null || dragIndex === i) return;
-                  setCopyDayRows((prev) => {
-                    const next = [...prev];
-                    const [moved] = next.splice(dragIndex, 1);
-                    const insertAt = dragIndexPosition === 'after'
-                      ? (dragIndex < i ? i : i + 1)
-                      : (dragIndex < i ? i - 1 : i);
-                    next.splice(Math.max(0, insertAt), 0, moved);
-                    return next;
-                  });
-                  setDragIndex(null);
-                  setDragIndexOver(null);
-                }}
-                onDragEnd={() => { setDragIndex(null); setDragIndexOver(null); }}
-                className={`grid grid-cols-[16px_20px_1fr_72px_80px_72px_60px_1fr_24px] gap-2 items-center transition-opacity ${dragIndex === i ? "opacity-40" : ""} ${dragIndexOver === i && dragIndex !== i ? (dragIndexPosition === 'before' ? "border-t-2 border-[var(--accent)]" : "border-b-2 border-[var(--accent)]") : ""}`}
-              >
-                <span className="text-[var(--text-muted)] cursor-grab select-none text-center" title="Drag to reorder">⠿</span>
-                <span className="text-xs text-[var(--text-muted)] text-center">{i + 1}</span>
-                <span className="text-sm text-[var(--text)] truncate px-1">{exerciseMap[row.exerciseId] ?? row.exerciseId}</span>
-                <input
-                  type="number"
-                  value={row.value}
-                  onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, value: e.target.value } : r))}
-                  step="any"
-                  placeholder="—"
-                  className={inputClass}
-                />
-                <select
-                  value={row.measure}
-                  onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, measure: e.target.value } : r))}
-                  className={inputClass}
+            {copyDayRows.map((row, i) => {
+              const finalOrder = copyDayRows.length - i;
+              return (
+                <div
+                  key={i}
+                  draggable
+                  onDragStart={() => setDragIndex(i)}
+                  onDragOver={(e) => { e.preventDefault(); setDragIndexOver(i); const rect = e.currentTarget.getBoundingClientRect(); setDragIndexPosition(e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'); }}
+                  onDrop={() => {
+                    if (dragIndex === null || dragIndex === i) return;
+                    setCopyDayRows((prev) => {
+                      const next = [...prev];
+                      const [moved] = next.splice(dragIndex, 1);
+                      const insertAt = dragIndexPosition === 'after'
+                        ? (dragIndex < i ? i : i + 1)
+                        : (dragIndex < i ? i - 1 : i);
+                      next.splice(Math.max(0, insertAt), 0, moved);
+                      return next;
+                    });
+                    setDragIndex(null);
+                    setDragIndexOver(null);
+                  }}
+                  onDragEnd={() => { setDragIndex(null); setDragIndexOver(null); }}
+                  className={`flex flex-wrap items-end gap-x-3 gap-y-2 p-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface-alt)] transition-opacity ${dragIndex === i ? "opacity-40" : ""} ${dragIndexOver === i && dragIndex !== i ? (dragIndexPosition === 'before' ? "border-t-2 border-t-[var(--accent)]" : "border-b-2 border-b-[var(--accent)]") : ""}`}
                 >
-                  {MEASURES.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
-                <input
-                  type="number"
-                  value={row.planned}
-                  onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, planned: e.target.value } : r))}
-                  step="any"
-                  placeholder="—"
-                  className={inputClass}
-                />
-                <span className="text-xs text-[var(--text-muted)] px-1">{row.actual ?? "—"}</span>
-                <input
-                  type="text"
-                  value={row.notes}
-                  onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, notes: e.target.value } : r))}
-                  placeholder="—"
-                  className={inputClass}
-                />
-                <button
-                  onClick={() => setCopyDayRows((prev) => prev.filter((_, j) => j !== i))}
-                  className="text-[var(--text-muted)] hover:text-red-500 transition-colors text-base leading-none"
-                  title="Remove"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center gap-2 self-center shrink-0">
+                    <span className="text-[var(--text-muted)] cursor-grab select-none" title="Drag to reorder">⠿</span>
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[var(--accent)] text-white text-xs font-semibold shrink-0" title="Resulting set order">
+                      {finalOrder}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-[140px] flex-1">
+                    <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">Exercise</span>
+                    <span className="text-sm text-[var(--text)] truncate">{exerciseMap[row.exerciseId] ?? row.exerciseId}</span>
+                  </div>
+                  <Field label="Value">
+                    <input
+                      type="number"
+                      value={row.value}
+                      onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, value: e.target.value } : r))}
+                      step="any"
+                      placeholder="—"
+                      className={`${inputClass} w-24`}
+                    />
+                  </Field>
+                  <Field label="Measure">
+                    <select
+                      value={row.measure}
+                      onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, measure: e.target.value } : r))}
+                      className={`${inputClass} w-28`}
+                    >
+                      {MEASURES.map((m) => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Planned">
+                    <input
+                      type="number"
+                      value={row.planned}
+                      onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, planned: e.target.value } : r))}
+                      step="any"
+                      placeholder="—"
+                      className={`${inputClass} w-24`}
+                    />
+                  </Field>
+                  <Field label="Actual">
+                    <span className="text-sm text-[var(--text-muted)] px-1 py-2 block w-16">{row.actual ?? "—"}</span>
+                  </Field>
+                  <Field label="Notes">
+                    <input
+                      type="text"
+                      value={row.notes}
+                      onChange={(e) => setCopyDayRows((prev) => prev.map((r, j) => j === i ? { ...r, notes: e.target.value } : r))}
+                      placeholder="—"
+                      className={`${inputClass} min-w-[160px]`}
+                    />
+                  </Field>
+                  <button
+                    onClick={() => setCopyDayRows((prev) => prev.filter((_, j) => j !== i))}
+                    className="self-center text-[var(--text-muted)] hover:text-red-500 transition-colors text-base leading-none shrink-0"
+                    title="Remove"
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
           </div>
           <div className="flex gap-3 mt-6">
             <button onClick={handleCopyDay} disabled={copyDayLoading || copyDayRows.length === 0} className={`${submitClass} inline-flex items-center gap-2`}>
@@ -1041,11 +1051,11 @@ function SearchableSelect({
   );
 }
 
-function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+function Modal({ title, children, onClose, maxWidthClass = "max-w-lg" }: { title: string; children: React.ReactNode; onClose: () => void; maxWidthClass?: string }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={onClose}>
       <div
-        className="bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6 w-full max-w-lg shadow-lg max-h-[90vh] overflow-y-auto"
+        className={`bg-[var(--surface)] rounded-[20px] border border-[var(--border)] p-6 w-full ${maxWidthClass} shadow-lg max-h-[90vh] overflow-y-auto`}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="font-heading font-bold text-base text-[var(--text)] mb-2">{title}</h3>
