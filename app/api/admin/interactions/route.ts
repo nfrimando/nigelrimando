@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { db } from "@/lib/db";
 import { interactions, persons } from "@/lib/schema";
-import { desc, eq, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, like, lte, min, or, sql } from "drizzle-orm";
 
 async function requireAuth() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
@@ -31,12 +31,11 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "25")));
   const q = searchParams.get("q")?.trim() ?? "";
-  const offset = (page - 1) * limit;
+  const from = searchParams.get("from")?.trim();
+  const to = searchParams.get("to")?.trim();
 
-  const condition = q
+  const searchCondition = q
     ? or(
         like(interactions.entryDate, `%${q}%`),
         like(interactions.note, `%${q}%`),
@@ -45,11 +44,39 @@ export async function GET(req: NextRequest) {
       )
     : undefined;
 
+  // Range mode: return every interaction in [from, to] (no pagination) plus the
+  // earliest date on record so the client knows when to stop loading older days.
+  if (from && to) {
+    const rangeCondition = and(
+      gte(interactions.entryDate, from),
+      lte(interactions.entryDate, to),
+      searchCondition,
+    );
+
+    const data = await db
+      .select(selectedFields)
+      .from(interactions)
+      .leftJoin(persons, eq(interactions.personId, persons.id))
+      .where(rangeCondition)
+      .orderBy(desc(interactions.entryDate), desc(interactions.createdAt))
+      .limit(2000);
+
+    const [{ earliestDate }] = await db
+      .select({ earliestDate: min(interactions.entryDate) })
+      .from(interactions);
+
+    return NextResponse.json({ data, from, to, earliestDate });
+  }
+
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "25")));
+  const offset = (page - 1) * limit;
+
   const rows = await db
     .select({ ...selectedFields, total: sql<number>`COUNT(*) OVER()` })
     .from(interactions)
     .leftJoin(persons, eq(interactions.personId, persons.id))
-    .where(condition)
+    .where(searchCondition)
     .orderBy(desc(interactions.entryDate), desc(interactions.createdAt))
     .limit(limit)
     .offset(offset);

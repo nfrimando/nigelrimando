@@ -62,19 +62,48 @@ const submitClass =
 const cancelClass =
   "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] text-sm font-medium py-2 px-5 rounded-[14px] transition-colors duration-200";
 
-const PAGE_SIZE = 25;
+const WINDOW_DAYS = 30;
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
 const defaultForm: FormState = { entryDate: today, personId: "", rank: "", note: "", sentiment: "" };
 
-function sentimentLabel(s: number | null) {
-  if (s === null) return "—";
-  if (s > 0) return `+${s}`;
-  return String(s);
+// Shift a YYYY-MM-DD string by n days, parsing/formatting as a LOCAL date to avoid UTC drift.
+function addDays(dateStr: string, n: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d + n);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
+function formatDateLabel(dateStr: string): { weekday: string; monthDay: string } {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return {
+    weekday: new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(dt),
+    monthDay: new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(dt),
+  };
+}
+
+// Sentiment → name color. 2 green, 1 light green, -1 light red, -2 red (bucketed).
+function sentimentClasses(s: number | null): string {
+  if (s == null || s === 0) return "text-[var(--text)]";
+  if (s >= 2) return "text-[var(--success)] font-semibold";
+  if (s === 1) return "text-[var(--success)] opacity-70";
+  if (s === -1) return "text-[var(--warm)] opacity-70";
+  return "text-[var(--warm)] font-semibold"; // <= -2
 }
 
 function personDisplay(row: InteractionRow) {
   if (!row.personName) return "—";
   return row.personNickname ? `${row.personName} (${row.personNickname})` : row.personName;
+}
+
+// Compact label for a per-date chip: the person's name, or the note for personless entries.
+function chipLabel(row: InteractionRow): string {
+  if (row.personName) return row.personName;
+  if (row.note) return row.note;
+  return "—";
 }
 
 function personLabel(p: Person) {
@@ -197,9 +226,8 @@ function PersonCombobox({
 
 export default function InteractionsSection() {
   const [data, setData] = useState<InteractionRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [fromDate, setFromDate] = useState(() => addDays(today, -WINDOW_DAYS));
+  const [earliestDate, setEarliestDate] = useState<string | null>(null);
   const [persons, setPersons] = useState<Person[]>([]);
   const [fetching, setFetching] = useState(false);
   const [search, setSearch] = useState("");
@@ -214,18 +242,15 @@ export default function InteractionsSection() {
   const [editError, setEditError] = useState("");
   const [saveError, setSaveError] = useState("");
 
-  async function fetchPage(p: number, q: string) {
+  async function fetchRange(from: string, to: string) {
     setFetching(true);
     try {
-      const params = new URLSearchParams({ page: String(p), limit: String(PAGE_SIZE) });
-      if (q) params.set("q", q);
+      const params = new URLSearchParams({ from, to });
       const res = await fetch(`/api/admin/interactions?${params}`);
       if (res.ok) {
         const json = await res.json();
         setData(json.data ?? []);
-        setTotal(json.total ?? 0);
-        setPage(json.page ?? p);
-        setTotalPages(json.totalPages || 1);
+        setEarliestDate(json.earliestDate ?? null);
       }
     } finally {
       setFetching(false);
@@ -238,23 +263,21 @@ export default function InteractionsSection() {
   }
 
   useEffect(() => {
-    fetchPage(1, "");
+    fetchRange(addDays(today, -WINDOW_DAYS), today);
     fetchPersons();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleSearchChange(value: string) {
-    setSearch(value);
+  function loadOlder() {
+    const next = addDays(fromDate, -WINDOW_DAYS);
+    setFromDate(next);
+    fetchRange(next, today);
   }
 
-  function commitSearch(q: string) {
-    const trimmed = q.trim();
-    if (trimmed.length === 0 || trimmed.length >= 3) {
-      fetchPage(1, trimmed);
-    }
-  }
-
-  function goToPage(p: number) {
-    fetchPage(p, search.trim());
+  function openAddForDate(date: string) {
+    setRows([{ ...defaultForm, entryDate: date }]);
+    setAddError("");
+    setShowAddModal(true);
   }
 
   function updateRow(index: number, patch: Partial<FormState>) {
@@ -282,7 +305,7 @@ export default function InteractionsSection() {
       if (res.ok) {
         setRows([{ ...defaultForm }]);
         setShowAddModal(false);
-        fetchPage(page, search.trim());
+        fetchRange(fromDate, today);
       } else {
         const json = await res.json();
         setAddError(json.error || "Failed to add interactions.");
@@ -343,8 +366,48 @@ export default function InteractionsSection() {
   async function handleDelete(id: number) {
     if (!confirm("Delete this interaction? This cannot be undone.")) return;
     await fetch(`/api/admin/interactions/${id}`, { method: "DELETE" });
-    fetchPage(page, search.trim());
+    fetchRange(fromDate, today);
   }
+
+  const yesterday = addDays(today, -1);
+  const q = search.trim().toLowerCase();
+  const filtering = q.length > 0;
+
+  const personsById = new Map(persons.map((p) => [p.id, p]));
+
+  // Group the loaded window into { date -> interactions }, applying the client-side filter.
+  const byDate = new Map<string, InteractionRow[]>();
+  for (const row of data) {
+    if (
+      filtering &&
+      !(
+        (row.personName ?? "").toLowerCase().includes(q) ||
+        (row.personNickname ?? "").toLowerCase().includes(q) ||
+        (row.note ?? "").toLowerCase().includes(q)
+      )
+    ) {
+      continue;
+    }
+    const arr = byDate.get(row.entryDate) ?? [];
+    arr.push(row);
+    byDate.set(row.entryDate, arr);
+  }
+  // Within a day, order by rank ascending (rank #1 leftmost); unranked fall last, newest first.
+  for (const arr of byDate.values()) {
+    arr.sort((a, b) => {
+      const ra = a.rank ?? Number.POSITIVE_INFINITY;
+      const rb = b.rank ?? Number.POSITIVE_INFINITY;
+      if (ra !== rb) return ra - rb;
+      return b.createdAt - a.createdAt;
+    });
+  }
+
+  // Every date in the window, newest first — empty days included so gaps stay visible.
+  const allDates: string[] = [];
+  for (let d = today; d >= fromDate; d = addDays(d, -1)) {
+    allDates.push(d);
+  }
+  const visibleDates = filtering ? allDates.filter((d) => (byDate.get(d)?.length ?? 0) > 0) : allDates;
 
   return (
     <div className="flex flex-col gap-6">
@@ -352,127 +415,110 @@ export default function InteractionsSection() {
         {saveError && <p className="text-sm text-red-500 mb-3">{saveError}</p>}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="font-heading font-bold text-base text-[var(--text)] flex items-center gap-2">
-            Interactions ({total})
+            Interactions ({data.length})
             {fetching && <Spinner />}
           </h2>
           <div className="flex items-center gap-3">
             <input
               type="search"
               value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              onBlur={(e) => commitSearch(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") commitSearch(search); }}
-              placeholder="Search…"
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter people…"
               className={`${inputClass} max-w-[180px]`}
             />
-            <button
-              onClick={() => { setRows([{ ...defaultForm }]); setAddError(""); setShowAddModal(true); }}
-              className={submitClass}
-            >
+            <button onClick={() => openAddForDate(today)} className={submitClass}>
               + Add interaction
             </button>
           </div>
         </div>
 
-        {data.length === 0 ? (
-          <p className="text-sm text-[var(--text-muted)]">No interactions found.</p>
-        ) : (
-          <>
-            {/* Mobile card list */}
-            <div className="sm:hidden flex flex-col divide-y divide-[var(--border)]">
-              {data.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
-                ({ els, lastDate }, row, i) => {
-                  if (row.entryDate !== lastDate) {
-                    els.push(
-                      <div key={`date-${row.entryDate}-${i}`} className="py-2 px-1 bg-[var(--surface-alt)]">
-                        <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{row.entryDate}</span>
-                      </div>
-                    );
-                  }
-                  els.push(
-                    <div key={row.id} className="py-3" onClick={() => startEdit(row)}>
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-medium text-sm text-[var(--text)]">{personDisplay(row)}</span>
-                        <div className="flex gap-2 shrink-0">
-                          {row.rank != null && <span className="text-xs text-[var(--text-muted)]">#{row.rank}</span>}
-                          {row.sentiment != null && (
-                            <span className={`text-xs font-medium ${row.sentiment > 0 ? "text-[var(--success)]" : row.sentiment < 0 ? "text-[var(--warm)]" : "text-[var(--text-muted)]"}`}>
-                              {sentimentLabel(row.sentiment)}
+        <div className="flex flex-col divide-y divide-[var(--border)]">
+          {visibleDates.length === 0 ? (
+            <p className="text-sm text-[var(--text-muted)] py-2">No interactions match “{search.trim()}”.</p>
+          ) : (
+            visibleDates.map((date) => {
+              const dayRows = byDate.get(date) ?? [];
+              const { weekday, monthDay } = formatDateLabel(date);
+              const isToday = date === today;
+              const isYesterday = date === yesterday;
+              return (
+                <div key={date} className="group flex flex-col sm:flex-row sm:items-baseline gap-1.5 sm:gap-4 py-3">
+                  <div className="sm:w-36 shrink-0 flex items-center gap-2">
+                    <span className="font-mono text-xs text-[var(--text-muted)] whitespace-nowrap">
+                      {weekday} · {monthDay}
+                    </span>
+                    {isToday && (
+                      <span className="text-[10px] uppercase tracking-wide font-semibold text-[var(--accent)]">Today</span>
+                    )}
+                    {isYesterday && (
+                      <span className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Yest</span>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0 flex flex-wrap items-center gap-y-1.5">
+                    {dayRows.length === 0 ? (
+                      <button
+                        onClick={() => openAddForDate(date)}
+                        className="inline-flex items-center gap-2 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                      >
+                        <span className="opacity-40">—</span>
+                        <span className="font-medium">+ Add interaction</span>
+                      </button>
+                    ) : (
+                      <>
+                        {dayRows.map((row, idx) => {
+                          const person = row.personId != null ? personsById.get(row.personId) : undefined;
+                          return (
+                            <span key={row.id} className="inline-flex items-center">
+                              <button
+                                onClick={() => startEdit(row)}
+                                title={personDisplay(row)}
+                                className="inline-flex items-center gap-1.5 rounded-full -mx-0.5 px-1 py-0.5 hover:bg-[var(--surface-alt)] transition-colors"
+                              >
+                                {person?.imageUrl && (
+                                  <img
+                                    src={person.imageUrl}
+                                    alt={person.name}
+                                    className="w-5 h-5 rounded-full object-cover shrink-0"
+                                  />
+                                )}
+                                <span
+                                  className={`text-sm ${row.personName ? sentimentClasses(row.sentiment) : "italic text-[var(--text-muted)]"}`}
+                                >
+                                  {chipLabel(row)}
+                                </span>
+                              </button>
+                              {idx < dayRows.length - 1 && <span className="text-[var(--text-muted)] mr-1.5">,</span>}
                             </span>
-                          )}
-                        </div>
-                      </div>
-                      {row.note && <p className="text-xs text-[var(--text-muted)] mb-2 line-clamp-2">{row.note}</p>}
-                      <div className="flex justify-end gap-3" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => handleDelete(row.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">Del</button>
-                      </div>
-                    </div>
-                  );
-                  return { els, lastDate: row.entryDate };
-                },
-                { els: [], lastDate: null }
-              ).els}
-            </div>
+                          );
+                        })}
+                        <button
+                          onClick={() => openAddForDate(date)}
+                          aria-label="Add interaction"
+                          className="ml-1.5 text-[var(--text-muted)] hover:text-[var(--accent)] text-base leading-none transition-colors"
+                        >
+                          +
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
 
-            {/* Desktop table */}
-            <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
-                    <th className="pb-2 pr-4 font-medium">Date</th>
-                    <th className="pb-2 pr-4 font-medium">Person</th>
-                    <th className="pb-2 pr-4 font-medium">Rank</th>
-                    <th className="pb-2 pr-4 font-medium">Sentiment</th>
-                    <th className="pb-2 pr-4 font-medium">Note</th>
-                    <th className="pb-2 font-medium"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.reduce<{ els: React.ReactNode[]; lastDate: string | null }>(
-                    ({ els, lastDate }, row, i) => {
-                      if (row.entryDate !== lastDate) {
-                        els.push(
-                          <tr key={`date-${row.entryDate}-${i}`} className="bg-[var(--surface-alt)]">
-                            <td colSpan={6} className="py-1.5 px-3">
-                              <span className="text-xs font-semibold text-[var(--accent)] tracking-wide uppercase">{row.entryDate}</span>
-                            </td>
-                          </tr>
-                        );
-                      }
-                      els.push(
-                        <tr key={row.id} className="border-b border-[var(--border)] last:border-0 align-top cursor-pointer hover:bg-[var(--surface-alt)] transition-colors" onClick={() => startEdit(row)}>
-                          <td className="py-2 pr-4 text-[var(--text-muted)] whitespace-nowrap font-mono text-xs">{row.entryDate}</td>
-                          <td className="py-2 pr-4 text-[var(--text)] whitespace-nowrap">{personDisplay(row)}</td>
-                          <td className="py-2 pr-4 text-[var(--text-muted)]">{row.rank ?? "—"}</td>
-                          <td className="py-2 pr-4 text-[var(--text-muted)]">{sentimentLabel(row.sentiment)}</td>
-                          <td className="py-2 pr-4 text-[var(--text)] max-w-xs">{row.note ?? "—"}</td>
-                          <td className="py-2" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex gap-2">
-                              <button onClick={() => handleDelete(row.id)} className="text-xs text-[var(--warm)] hover:underline">Delete</button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                      return { els, lastDate: row.entryDate };
-                    },
-                    { els: [], lastDate: null }
-                  ).els}
-                </tbody>
-              </table>
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex items-center gap-4 mt-4">
-                <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
-                  ← Prev
-                </button>
-                <span className="text-sm text-[var(--text-muted)]">Page {page} of {totalPages}</span>
-                <button onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed">
-                  Next →
-                </button>
-              </div>
-            )}
-          </>
+        {!filtering && (!earliestDate || fromDate > earliestDate) && (
+          <div className="mt-4">
+            <button
+              onClick={loadOlder}
+              disabled={fetching}
+              className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2"
+            >
+              {fetching && <Spinner />}
+              Load older
+            </button>
+          </div>
         )}
       </section>
 
