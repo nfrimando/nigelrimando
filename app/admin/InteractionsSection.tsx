@@ -265,7 +265,6 @@ export default function InteractionsSection() {
   useEffect(() => {
     fetchRange(addDays(today, -WINDOW_DAYS), today);
     fetchPersons();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function loadOlder() {
@@ -366,6 +365,7 @@ export default function InteractionsSection() {
   async function handleDelete(id: number) {
     if (!confirm("Delete this interaction? This cannot be undone.")) return;
     await fetch(`/api/admin/interactions/${id}`, { method: "DELETE" });
+    setEditingId(null);
     fetchRange(fromDate, today);
   }
 
@@ -698,9 +698,16 @@ export default function InteractionsSection() {
               />
             </Field>
             {editError && <p className="text-sm text-red-500">{editError}</p>}
-            <div className="flex gap-3 pt-1">
+            <div className="flex items-center gap-3 pt-1">
               <button type="submit" className={submitClass}>Save changes</button>
               <button type="button" onClick={() => setEditingId(null)} className={cancelClass}>Cancel</button>
+              <button
+                type="button"
+                onClick={() => { if (editingId != null) handleDelete(editingId); }}
+                className="ml-auto text-sm text-[var(--warm)] hover:underline"
+              >
+                Delete
+              </button>
             </div>
           </form>
         </Modal>

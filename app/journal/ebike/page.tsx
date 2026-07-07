@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { db } from "@/lib/db";
 import { transports } from "@/lib/schema";
 import { and, eq, count, desc } from "drizzle-orm";
+import { getYoutubeThumbnail } from "@/lib/youtube";
 import EbikeTrips from "./EbikeTrips";
 
 function todayPH(): string {
@@ -24,6 +25,7 @@ export default async function EbikeJournalPage() {
       .select({
         date: transports.date,
         destination: transports.destination,
+        videoUrl: transports.videoUrl,
       })
       .from(transports)
       .where(ebikeFilter)
@@ -36,6 +38,15 @@ export default async function EbikeJournalPage() {
   // Distinct ride days
   const rideDates = new Set(allTripsRaw.map((r) => r.date));
   const totalDays = rideDates.size;
+
+  // Map each ride day to a YouTube video (most recent trip with a valid video wins,
+  // since allTripsRaw is ordered by date/id desc).
+  const videoByDate = new Map<string, string>();
+  for (const { date, videoUrl } of allTripsRaw) {
+    if (videoUrl && !videoByDate.has(date) && getYoutubeThumbnail(videoUrl)) {
+      videoByDate.set(date, videoUrl);
+    }
+  }
 
   // Last ride + days since
   const lastDate = allTripsRaw[0]?.date ?? null;
@@ -76,7 +87,13 @@ export default async function EbikeJournalPage() {
   ].join("-");
 
   // Only dates within calendar window from rideDates
-  const calDays: Array<{ date: string; rode: boolean; isFuture: boolean }> = [];
+  const calDays: Array<{
+    date: string;
+    rode: boolean;
+    isFuture: boolean;
+    videoUrl: string | null;
+    thumbUrl: string | null;
+  }> = [];
   for (let i = 0; i < 28; i++) {
     const d = new Date(ty, tm - 1, td - daysFromMonday - 21 + i);
     const ds = [
@@ -84,10 +101,13 @@ export default async function EbikeJournalPage() {
       String(d.getMonth() + 1).padStart(2, "0"),
       String(d.getDate()).padStart(2, "0"),
     ].join("-");
+    const videoUrl = videoByDate.get(ds) ?? null;
     calDays.push({
       date: ds,
       rode: rideDates.has(ds),
       isFuture: ds > today,
+      videoUrl,
+      thumbUrl: getYoutubeThumbnail(videoUrl),
     });
   }
 
@@ -161,20 +181,50 @@ export default async function EbikeJournalPage() {
                 {d}
               </div>
             ))}
-            {calDays.map(({ date, rode, isFuture }) => (
-              <div
-                key={date}
-                title={rode ? `Rode on ${date}` : date}
-                className={[
-                  "aspect-square rounded-[8px] transition-colors",
-                  isFuture
-                    ? "opacity-0 pointer-events-none"
-                    : rode
-                      ? "bg-[var(--accent)]"
-                      : "bg-[var(--surface-alt)] border border-[var(--border)]",
-                ].join(" ")}
-              />
-            ))}
+            {calDays.map(({ date, rode, isFuture, videoUrl, thumbUrl }) =>
+              !isFuture && thumbUrl && videoUrl ? (
+                <a
+                  key={date}
+                  href={videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Watch ride — ${date}`}
+                  className="group relative aspect-square rounded-[8px] overflow-hidden ring-1 ring-[var(--accent)]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={thumbUrl}
+                    alt=""
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-90 transition-opacity duration-200 group-hover:opacity-60">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="#FFFFFF"
+                      className="drop-shadow"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </span>
+                </a>
+              ) : (
+                <div
+                  key={date}
+                  title={rode ? `Rode on ${date}` : date}
+                  className={[
+                    "aspect-square rounded-[8px] transition-colors",
+                    isFuture
+                      ? "opacity-0 pointer-events-none"
+                      : rode
+                        ? "bg-[var(--accent)]"
+                        : "bg-[var(--surface-alt)] border border-[var(--border)]",
+                  ].join(" ")}
+                />
+              ),
+            )}
           </div>
         </section>
 
