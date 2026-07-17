@@ -457,12 +457,13 @@ export default async function Home() {
               <div className="flex gap-1.5 min-w-max">
                 {milkTeaDays.map(({ date, count }) => {
                   const day = date.slice(8);
-                  const intensity = count === 0 ? 0 : Math.min(count / 4, 1);
+                  const intensity =
+                    count === 0 ? 0 : Math.min(0.35 + (count - 1) * 0.25, 1);
                   const bgColor =
                     count === 0
                       ? "#EFE8DF"
                       : `rgba(139, 108, 97, ${intensity})`;
-                  const showNumber = count >= 2;
+                  const showNumber = count >= 1;
                   const lightText = intensity < 0.65;
                   return (
                     <div
