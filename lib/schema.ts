@@ -111,6 +111,10 @@ export const thoughts = sqliteTable(
     entryDate: text("entry_date").notNull(),
     thought: text("thought").notNull(),
     type: text("type"),
+    // DB enforces: CHECK (source IN ('telegram','webapp','import'))
+    source: text("source", { enum: ["telegram", "webapp", "import"] })
+      .notNull()
+      .default("webapp"),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`(unixepoch())`),
@@ -120,6 +124,9 @@ export const thoughts = sqliteTable(
   },
   (t) => [index("idx_thoughts_entry_date").on(t.entryDate)],
 );
+
+export const THOUGHT_SOURCES = ["telegram", "webapp", "import"] as const;
+export type ThoughtSource = (typeof THOUGHT_SOURCES)[number];
 
 export const interactions = sqliteTable(
   "interactions",

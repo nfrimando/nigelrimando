@@ -3,7 +3,7 @@ import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { db } from "@/lib/db";
-import { thoughts } from "@/lib/schema";
+import { THOUGHT_SOURCES, ThoughtSource, thoughts } from "@/lib/schema";
 import { desc, getTableColumns, like, or, sql } from "drizzle-orm";
 
 async function requireAuth() {
@@ -51,13 +51,19 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { entryDate, thought, type } = body;
+  const { entryDate, thought, type, source } = body;
 
   if (!entryDate?.trim()) {
     return NextResponse.json({ error: "Entry date is required" }, { status: 400 });
   }
   if (!thought?.trim()) {
     return NextResponse.json({ error: "Thought is required" }, { status: 400 });
+  }
+  if (source !== undefined && !THOUGHT_SOURCES.includes(source)) {
+    return NextResponse.json(
+      { error: `source must be one of: ${THOUGHT_SOURCES.join(", ")}` },
+      { status: 400 },
+    );
   }
 
   const [row] = await db
@@ -66,6 +72,7 @@ export async function POST(req: NextRequest) {
       entryDate: entryDate.trim(),
       thought: thought.trim(),
       type: type?.trim() || null,
+      source: (source as ThoughtSource) ?? "webapp",
     })
     .returning();
   return NextResponse.json(row, { status: 201 });

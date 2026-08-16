@@ -14,9 +14,31 @@ Phase 4 — Journaling system, admin dashboard, and DB are live. Homepage is sti
 - Next.js 14+ with App Router
 - TypeScript
 - Tailwind CSS
-- Turso + Drizzle ORM
+- Turso + Drizzle ORM (query builder only — see "Database Changes")
 - iron-session (auth for protected routes)
 - Hosted on Vercel
+
+# Database Changes
+
+**Schema changes are applied manually as raw SQL. There is no migration tool.**
+
+`drizzle-kit`, `drizzle.config.ts`, and the `drizzle/` migration folder have been removed
+deliberately. Do not reinstall them, do not run `drizzle-kit generate` / `migrate` / `push`,
+and do not create a `drizzle/` folder. Drizzle is used **only** as a typed query builder in
+`lib/db.ts` — it never manages the schema.
+
+To change the schema:
+
+1. Run the SQL against Turso yourself (`ALTER TABLE` / `CREATE TABLE` / `CREATE INDEX`).
+2. Mirror the change in `lib/schema.ts` so the TypeScript types match.
+
+Both steps are required, in that order. `lib/schema.ts` is a *description* of the live
+database, not a source of truth that generates it — editing it alone changes nothing in the
+DB, and deploying an edit for a column that doesn't exist yet causes runtime errors on every
+query that selects it.
+
+Constraints that Drizzle can't express (like `CHECK`) live in the DB only; note them in a
+comment above the column in `lib/schema.ts`, as done for `thoughts.source`.
 
 # Auth
 
@@ -197,8 +219,9 @@ components/
 public/
   assets/                    ← images, icons
 lib/
-  db.ts                      ← Turso + Drizzle client
+  db.ts                      ← Turso + Drizzle client (queries only, no migrations)
   schema.ts                  ← 11 tables (exercises, sets, padel, habits, thoughts, etc.)
+                               mirrors the live DB by hand — see "Database Changes"
   session.ts                 ← iron-session config
   content-stream.ts          ← Medium + thoughts aggregator
   sources/
