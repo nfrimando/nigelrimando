@@ -11,7 +11,6 @@ import { getContentStream } from "@/lib/content-stream";
 import type { ContentItem } from "@/lib/content-stream";
 import StreamScroller from "@/components/StreamScroller";
 import VisitorMessageForm from "@/components/VisitorMessageForm";
-import { formatReportDate } from "@/lib/reports";
 
 // ── Components ────────────────────────────────────────────────────────────────
 
@@ -99,35 +98,6 @@ function ThoughtCard({
         </div>
       )}
     </div>
-  );
-}
-
-function ReportCard({
-  slug,
-  title,
-  summary,
-  datasetLabel,
-  date,
-}: Extract<ContentItem, { type: "report" }>) {
-  return (
-    <a
-      href={`/reports/${slug}`}
-      className="group w-72 shrink-0 rounded-[20px] bg-surface border border-border p-6 flex flex-col gap-3 hover:border-accent/40 transition-colors duration-200"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-mono text-muted uppercase tracking-widest shrink-0">
-          Report · {datasetLabel}
-        </span>
-        <span className="text-[10px] font-mono text-muted text-right">
-          {formatReportDate(date)}
-        </span>
-      </div>
-      <h3 className="font-bold font-heading tracking-tight text-text leading-snug group-hover:text-accent transition-colors duration-200">
-        {title}
-      </h3>
-      {summary && <p className="text-sm text-muted leading-relaxed">{summary}</p>}
-      <span className="mt-auto text-xs text-accent">View report →</span>
-    </a>
   );
 }
 
@@ -584,8 +554,6 @@ export default async function Home() {
                 return <MediumCard key={item.url} {...item} />;
               if (item.type === "thought")
                 return <ThoughtCard key={item.id} {...item} />;
-              if (item.type === "report")
-                return <ReportCard key={item.slug} {...item} />;
             })}
           </StreamScroller>
         </section>

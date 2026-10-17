@@ -191,7 +191,14 @@ A dump of standalone HTML reports. To publish: drop the file in `public/reports/
 - **Filename:** `<dataset>-<YYYYMMDD>[-<anything>].html`, lowercase (e.g. `padel-20261017.html`). Dashes in the date are optional. Anything else fails the build.
 - **Title** comes from the HTML `<title>` (a trailing " · Nigel Rimando" is stripped). **Summary** comes from `<meta name="description">` if present.
 - **Dataset** is the filename prefix. `gym`, `padel`, `habits`, `ebike`, and `expenses` get labels and journal links in `lib/reports.ts`; any other prefix just shows capitalized.
-- **Shows up in:** the `/reports` index (search + dataset chips), the `/reports/<name>` viewer (sandboxed iframe of the raw `/reports/<name>.html`), the homepage stream, and `sitemap.xml`. `next.config.ts` traces `public/reports/*.html` so homepage ISR can still read them.
+- **Shows up in:** the `/reports` index (search + dataset chips; last tab in the nav), the `/reports/<name>` viewer (sandboxed iframe of the raw `/reports/<name>.html`), and `sitemap.xml`. Not in the homepage stream, which stays Medium + thoughts only. Everything is built at build time, so a new report goes live on the next deploy.
+
+**Publishing well:**
+1. Name it `<dataset>-<YYYYMMDD>.html`, using the date the data runs through. Add `-<topic>` only for two reports on the same day.
+2. Make `<title>` a finding, not a label ("890 sets, 70% won: my padel year" beats "Padel Year"). It becomes the card and page heading.
+3. Add `<meta name="description" content="…">` with 1–2 sentences. It shows on the card, is searchable, and is used as the Google/OG description.
+4. Keep it self-contained (inline CSS/JS or CDN links), and include the viewport meta so it works on phones.
+5. Run `npm run build` before pushing. It's public and indexed, so check names and personal details first.
 
 ## TODO: Deferred homepage sections
 
