@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Padel Year · Nigel Rimando</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Palette from nigelrimando.com */
+:root{
+  --bg:#f7f3ee; --surface:#ffffff; --surface-alt:#efe8df; --border:#d8cfc6;
+  --text:#171a1f; --text-muted:#66707a; --accent:#4e6877; --accent-hover:#3e5663;
+  --warm:#8b6c61; --success:#5e8365; --track:#efe8df;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto;padding:56px 16px 80px}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+h1,h2,.big,.hero b,.box .n{font-family:"Inter Tight",Inter,sans-serif}
+header .kicker{font:13px "JetBrains Mono",monospace;color:var(--text-muted);text-transform:lowercase}
+header h1{font-size:clamp(40px,8vw,72px);line-height:1;font-weight:700;letter-spacing:-.03em;margin:14px 0 16px}
+header h1 em{font-style:normal;color:var(--accent)}
+header p{color:var(--text-muted);max-width:560px}
+.hero{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin:36px 0 48px}
+.hero div{background:var(--surface);padding:18px 16px}
+.hero b{display:block;font-size:clamp(26px,5vw,36px);font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.hero span{font-size:13px;color:var(--text-muted)}
+.item{display:grid;grid-template-columns:72px 1fr;gap:20px;padding:32px 0;border-top:1px solid var(--border)}
+.num{font:500 14px "JetBrains Mono",monospace;color:var(--warm);padding-top:6px}
+.item h2{font-size:clamp(22px,3.6vw,30px);font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.item .lead{color:var(--text-muted);margin:8px 0 18px;max-width:600px}
+.name{color:var(--text);font-weight:600;border-bottom:2px solid rgba(139,108,97,.35)}
+.rows{display:grid;gap:10px}
+.row{display:grid;grid-template-columns:minmax(110px,190px) 1fr 92px;align-items:center;gap:12px;font-size:15px}
+.row .who{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:10px;background:var(--track);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.row .v{text-align:right;font:13px "JetBrains Mono",monospace;color:var(--text-muted)}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+.box .l{font-size:13px;color:var(--text-muted)}
+.box .n{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.months{display:grid;grid-template-columns:repeat(13,1fr);gap:6px;align-items:end;height:150px;margin-top:8px}
+.months div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px}
+.months i{display:block;width:100%;background:var(--accent);border-radius:5px 5px 2px 2px;opacity:.75}
+.months i.hi{background:var(--success);opacity:1}
+.months i.lo{background:var(--warm);opacity:1}
+.months span{font:10px "JetBrains Mono",monospace;color:var(--text-muted);writing-mode:vertical-rl;transform:rotate(180deg)}
+.note{font-size:13px;color:var(--text-muted);margin-top:12px}
+footer{border-top:1px solid var(--border);padding-top:24px;font-size:13px;color:var(--text-muted)}
+@media (max-width:600px){
+  .hero{grid-template-columns:1fr 1fr}
+  .item{grid-template-columns:1fr;gap:6px}
+  .duo{grid-template-columns:1fr}
+  .row{grid-template-columns:100px 1fr 80px;gap:8px;font-size:14px}
+  .months span{font-size:9px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">padel · oct 17, 2025 — oct 17, 2026</div>
+  <h1>A year of <em>padel</em>.</h1>
+  <p>Every set I logged in the past twelve months, boiled down to the ten things worth knowing about how I play padel.</p>
+</header>
+
+<section class="hero">
+  <div><b>206</b><span>days on court</span></div>
+  <div><b>890</b><span>sets played</span></div>
+  <div><b>8,496</b><span>games played</span></div>
+  <div><b>69.6%</b><span>sets won</span></div>
+</section>
+
+<!-- 01 -->
+<article class="item">
+  <div class="num">01</div>
+  <div>
+    <h2>I basically live here.</h2>
+    <p class="lead">That's a session every 1.8 days, averaging 4.3 sets each time. I won 4,802 games and dropped 3,694, which means I take 57% of all the games I play.</p>
+    <div class="duo">
+      <div class="box"><div class="l">Matches (won · lost · split)</div><div class="n">364 · 108 · 39</div></div>
+      <div class="box"><div class="l">Marathon day: Oct 17, 2025</div><div class="n">14 sets <small class="mono" style="font-size:14px;color:var(--text-muted)">13 won</small></div></div>
+    </div>
+  </div>
+</article>
+
+<!-- 02 -->
+<article class="item">
+  <div class="num">02</div>
+  <div>
+    <h2>My most-played partner</h2>
+    <p class="lead"><span class="name" data-p="144">Henrik Tollefsen</span> has been on my side of the net for 70 sets — more than anyone else, and we win 71% of them.</p>
+    <div class="rows" id="partners"></div>
+  </div>
+</article>
+
+<!-- 03 -->
+<article class="item">
+  <div class="num">03</div>
+  <div>
+    <h2>The dream team</h2>
+    <p class="lead">Among partners with 15+ sets together, these are the ones I almost never lose with. <span class="name" data-p="58">Evelio Evangelista</span> stands out: 87% over 39 sets.</p>
+    <div class="rows" id="bestp"></div>
+  </div>
+</article>
+
+<!-- 04 -->
+<article class="item">
+  <div class="num">04</div>
+  <div>
+    <h2>Favorite enemy</h2>
+    <p class="lead">I've faced <span class="name" data-p="252">Mark Javier</span> across the net in 105 sets — more than anyone — and won 78% of them. Fun twist: we've also partnered 46 times.</p>
+    <div class="rows" id="victims"></div>
+  </div>
+</article>
+
+<!-- 05 -->
+<article class="item">
+  <div class="num">05</div>
+  <div>
+    <h2>The frenemy</h2>
+    <p class="lead">My top partner is also my second most-faced opponent. On my side, <span class="name" data-p="144">Henrik Tollefsen</span> is a winning formula. Across the net, it's a coin flip.</p>
+    <div class="duo">
+      <div class="box"><div class="l">With <span data-p="144">Henrik Tollefsen</span></div><div class="n">71% <small style="font-size:14px;color:var(--text-muted)">· 70 sets</small></div></div>
+      <div class="box"><div class="l">Against <span data-p="144">Henrik Tollefsen</span></div><div class="n">55% <small style="font-size:14px;color:var(--text-muted)">· 99 sets</small></div></div>
+    </div>
+  </div>
+</article>
+
+<!-- 06 -->
+<article class="item">
+  <div class="num">06</div>
+  <div>
+    <h2>My nemesis</h2>
+    <p class="lead">Of everyone I've played 30+ sets against, <span class="name" data-p="379">Wesley Hontiveros</span> gives me the most trouble — barely above even after 51 sets.</p>
+    <div class="rows" id="nem"></div>
+  </div>
+</article>
+
+<!-- 07 -->
+<article class="item">
+  <div class="num">07</div>
+  <div>
+    <h2>Clutch when it's close</h2>
+    <p class="lead">When a set goes to a tiebreak, I take it more than two times out of three. And I hand out a lot more bagels than I eat.</p>
+    <div class="duo">
+      <div class="box"><div class="l">Tiebreak sets (7–6 vs 6–7)</div><div class="n">77–34 <small style="font-size:14px;color:var(--text-muted)">· 69%</small></div></div>
+      <div class="box"><div class="l">Bagels served vs eaten (6–0)</div><div class="n">31 vs 4</div></div>
+    </div>
+    <p class="note">Longest win streak: 17 sets in a row, ending Nov 14, 2025.</p>
+  </div>
+</article>
+
+<!-- 08 -->
+<article class="item">
+  <div class="num">08</div>
+  <div>
+    <h2>Home court advantage</h2>
+    <p class="lead">Play Padel Mandaluyong is home: 409 sets (46% of my year) at a 74% win rate. Manila Polo Club is the opposite story — 46% there, and my own notes say why: don't play in Polo with slippery shoes.</p>
+    <div class="rows" id="venues"></div>
+  </div>
+</article>
+
+<!-- 09 -->
+<article class="item">
+  <div class="num">09</div>
+  <div>
+    <h2>Sudden death suits me</h2>
+    <p class="lead">The more golden points in the format, the better I do. Long deuce battles are where I give sets away.</p>
+    <div class="rows" id="formats"></div>
+  </div>
+</article>
+
+<!-- 10 -->
+<article class="item">
+  <div class="num">10</div>
+  <div>
+    <h2>When I'm at my best</h2>
+    <p class="lead">April was my peak month (82%), May my slump (56%). By day, I'm sharpest midweek and on Fridays (75%) and weakest on Saturdays (63%). I play the right side 59% of the time, but win slightly more on the left (71% vs 68%).</p>
+    <div class="months" id="months"></div>
+    <p class="note">Set win rate by month. October 2025 and October 2026 are partial months.</p>
+  </div>
+</article>
+
+<footer>Logged set-by-set. Win rates are by set; partner and opponent rankings require 15+ and 30+ sets respectively.</footer>
+</div>
+
+<script>
+/* person id -> display name (from the persons table) */
+const NAMES = {
+  144: "Henrik Tollefsen", 207: "Juancho Palacios", 252: "Mark Javier",
+  58: "Evelio Evangelista", 297: "Norifumi Kawakita", 311: "Peach Orbe-Rimando",
+  129: "George Schulze", 230: "Jack Cruz", 235: "Luca Romualdez",
+  326: "Remco Goetheer", 379: "Wesley Hontiveros", 304: "Pancho de Miguel Jessel",
+  203: "Josh Kachmarik"
+};
+const nm = id => (NAMES[id] && NAMES[id].trim()) || ("Player #" + id);
+
+const D = {
+  partners: [[144,70,71],[207,54,70],[252,46,63],[58,39,87],[297,32,78]],
+  bestp:    [[311,20,90],[129,16,88],[58,39,87]],
+  victims:  [[252,105,78],[144,99,55],[230,70,76],[235,69,68],[326,64,61]],
+  nem:      [[379,51,51],[304,52,52],[203,35,54]],
+  venues:   [["Play Padel Mandaluyong",409,74],["Play Padel Mckinley",261,69],["Padel 300",92,70],["MPC BGC",27,52],["Manila Polo Club",26,46]],
+  formats:  [["Golden point",59,76],["One deuce, one golden",355,75],["Two deuce, one golden",346,65],["Regular deuce",129,63]],
+  months:   [["Oct 25",44,68],["Nov 25",107,78],["Dec 25",86,72],["Jan 26",93,70],["Feb 26",53,70],["Mar 26",68,66],["Apr 26",73,82],["May 26",52,56],["Jun 26",64,70],["Jul 26",88,67],["Aug 26",59,66],["Sep 26",66,61],["Oct 26",37,68]]
+};
+
+function rows(id, data, mode, isPerson){
+  const el = document.getElementById(id);
+  const max = Math.max(...data.map(d => d[1]));
+  el.innerHTML = data.map(([k,n,w]) => {
+    const label = isPerson ? nm(k) : k;
+    const pct = mode === "count" ? (n/max*100) : w;
+    return `<div class="row"><span class="who" title="${label}">${label}</span>
+      <span class="bar"><i style="width:${pct}%"></i></span>
+      <span class="v">${mode==="count" ? n+" sets · "+w+"%" : w+"% · "+n}</span></div>`;
+  }).join("");
+}
+rows("partners", D.partners, "count", true);
+rows("bestp",    D.bestp,    "rate",  true);
+rows("victims",  D.victims,  "count", true);
+rows("nem",      D.nem,      "rate",  true);
+rows("venues",   D.venues,   "count", false);
+rows("formats",  D.formats,  "rate",  false);
+
+const m = document.getElementById("months");
+m.innerHTML = D.months.map(([k,n,w]) => {
+  const cls = w === 82 ? "hi" : (w === 56 ? "lo" : "");
+  const h = Math.max(6, (w - 40) / 45 * 100);
+  return `<div title="${k}: ${w}% of ${n} sets"><i class="${cls}" style="height:${h}%"></i><span>${k}</span></div>`;
+}).join("");
+
+document.querySelectorAll("[data-p]").forEach(e => e.textContent = nm(+e.dataset.p));
+</script>
+</body>
+</html>

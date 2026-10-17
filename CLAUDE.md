@@ -184,6 +184,15 @@ Live on homepage (`#stream`). A horizontally scrollable feed of mixed content, s
 
 **Future sources to consider:** curated links/reads worth sharing from other sites, YouTube embeds.
 
+## Reports (`/reports`)
+
+A dump of standalone HTML reports. To publish: drop the file in `public/reports/` and push. No metadata files.
+
+- **Filename:** `<dataset>-<YYYYMMDD>[-<anything>].html`, lowercase (e.g. `padel-20261017.html`). Dashes in the date are optional. Anything else fails the build.
+- **Title** comes from the HTML `<title>` (a trailing " · Nigel Rimando" is stripped). **Summary** comes from `<meta name="description">` if present.
+- **Dataset** is the filename prefix. `gym`, `padel`, `habits`, `ebike`, and `expenses` get labels and journal links in `lib/reports.ts`; any other prefix just shows capitalized.
+- **Shows up in:** the `/reports` index (search + dataset chips), the `/reports/<name>` viewer (sandboxed iframe of the raw `/reports/<name>.html`), the homepage stream, and `sitemap.xml`. `next.config.ts` traces `public/reports/*.html` so homepage ISR can still read them.
+
 ## TODO: Deferred homepage sections
 
 ### What I've built (Featured builds)

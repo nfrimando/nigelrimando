@@ -1,12 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 
 const navLinks = [
-  { label: "Data Journal", href: "#data" },
-  { label: "Live Projects", href: "#projects" },
-  { label: "Thoughts", href: "#stream" },
-  { label: "Contact", href: "#contact" },
+  { label: "Data Journal", href: "/#data" },
+  { label: "Reports", href: "/reports" },
+  { label: "Live Projects", href: "/#projects" },
+  { label: "Thoughts", href: "/#stream" },
+  { label: "Contact", href: "/#contact" },
 ];
 
 export default function Nav() {
@@ -27,12 +29,12 @@ export default function Nav() {
       }`}
     >
       <nav className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between gap-6">
-        <a
-          href="#hero"
+        <Link
+          href="/#hero"
           className="text-sm font-bold tracking-tight text-text hover:text-accent transition-colors duration-200 font-heading shrink-0"
         >
           NR.
-        </a>
+        </Link>
         <ul className="flex items-center gap-6 sm:gap-8 overflow-x-auto">
           {navLinks.map((link) => (
             <li key={link.href} className="shrink-0">
