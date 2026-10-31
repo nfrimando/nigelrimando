@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11,391 sets in five years: bodybuilding to powerlifting to padel · Nigel Rimando</title>
+<meta name="description" content="11,391 gym sets from 2021 to 2026: how I went from bodybuilding to powerlifting to padel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f3ee; --surface:#fff; --surface-alt:#efe8df; --text:#171a1f; --muted:#66707a;
+  --accent:#4e6877; --accent-hover:#3e5663; --border:#d8cfc6; --grid:#ebe4dc;
+  --bb:#c0643f; --pl:#2a679c; --pd:#6f9a3a;
+  --sans:Inter,system-ui,sans-serif; --display:"Inter Tight",Inter,system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:1160px;margin:0 auto;padding:0 16px}
+header.top{display:flex;justify-content:space-between;align-items:center;padding:22px 0}
+.logo{font-family:var(--display);font-weight:800;font-size:18px;color:var(--text);text-decoration:none;letter-spacing:-.3px}
+.toplink{font-size:14px;color:var(--muted);text-decoration:none}
+.toplink:hover{color:var(--text)}
+.hero{padding:40px 0 28px}
+.eyebrow{font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:.2px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(38px,6.4vw,64px);line-height:1.02;letter-spacing:-1.6px;margin:14px 0 18px;max-width:900px}
+.lede{font-size:18px;line-height:1.6;color:#3b424a;max-width:720px;margin:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:34px 0 10px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.kpi b{display:block;font-family:var(--display);font-size:30px;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px;color:var(--muted)}
+.eras{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0 0}
+.era{border-radius:14px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);position:relative;overflow:hidden}
+.era::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--c)}
+.era h3{margin:0 0 2px;font-family:var(--display);font-size:18px}
+.era p{margin:0;font-size:13px;color:var(--muted);font-family:var(--mono)}
+.note{font-size:13px;color:var(--muted);margin:22px 0 0;line-height:1.55;max-width:760px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:28px;padding:36px 0 60px;justify-items:center}
+.cardwrap{width:100%;max-width:540px}
+.card{width:100%;aspect-ratio:4/5;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:30px 30px 22px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.card .meta{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;color:var(--text);background:var(--surface-alt);padding:4px 10px;border-radius:999px}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--c);display:inline-block}
+.card h2{font-family:var(--display);font-weight:700;font-size:31px;line-height:1.06;letter-spacing:-.9px;margin:18px 0 10px}
+.card h2 em{font-style:normal;color:var(--hl,var(--accent))}
+.card .sub{font-size:14.5px;line-height:1.5;color:#4a525b;margin:0 0 6px}
+.viz{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
+.viz svg{width:100%;height:auto;display:block;overflow:visible}
+.card footer{display:flex;justify-content:space-between;align-items:flex-end;font-family:var(--mono);font-size:11px;color:var(--muted);padding-top:10px;border-top:1px solid var(--grid)}
+.dl{margin-top:10px;display:flex;justify-content:flex-end;align-items:flex-start;gap:12px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:8px 0 4px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;background:var(--c);display:inline-block}
+.big{font-family:var(--display);font-weight:800;letter-spacing:-2px;line-height:.9}
+svg text{font-family:var(--sans);fill:var(--muted);font-size:11px}
+svg .lbl{fill:var(--text);font-weight:600}
+svg .mono{font-family:var(--mono)}
+.tip{position:fixed;pointer-events:none;background:var(--text);color:#fff;font:500 12.5px/1.45 var(--sans);padding:8px 10px;border-radius:8px;opacity:0;transition:opacity .12s;z-index:9;max-width:240px;box-shadow:0 6px 20px rgba(0,0,0,.15)}
+.tip b{font-weight:700}
+.tip .k{color:#b9c0c7}
+details.tbl{margin:4px 0 0;font-size:12.5px}
+details.tbl summary{cursor:pointer;color:var(--muted);font-family:var(--mono);font-size:11.5px}
+details.tbl table{border-collapse:collapse;width:100%;margin-top:6px}
+details.tbl td,details.tbl th{padding:3px 6px;border-bottom:1px solid var(--grid);text-align:left;font-variant-numeric:tabular-nums}
+.closing{border-top:1px solid var(--border);padding:34px 0 60px;display:grid;grid-template-columns:1.2fr 1fr;gap:30px}
+.closing h2{font-family:var(--display);font-size:30px;letter-spacing:-.8px;margin:0 0 10px}
+.closing p{color:#3b424a;line-height:1.6;margin:0 0 10px}
+.method{font-size:13px;color:var(--muted);line-height:1.6}
+.method li{margin-bottom:6px}
+@media (max-width:760px){
+  .kpis{grid-template-columns:repeat(2,1fr)} .eras{grid-template-columns:1fr} .closing{grid-template-columns:1fr}
+  .card{padding:22px 20px 16px;border-radius:18px} .card h2{font-size:25px;margin:12px 0 8px} .card .sub{font-size:13px}
+}
+.exporting .card{border-radius:0;border:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="logo" href="https://nigelrimando.com">NR.</a>
+    <a class="toplink" href="https://nigelrimando.com/journal/sets">Exercise log →</a>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">data journal · gym sets · apr 2021 – oct 2026</div>
+    <h1>Five years, 11,391 sets, and three different athletes.</h1>
+    <p class="lede">I've logged every set since April 2021. Reading it back, I can see three phases. I built muscle, then chased a powerlifting total, then let the barbell take a back seat so I could move better on a padel court. Here are ten things the log says about that.</p>
+    <div class="kpis">
+      <div class="kpi"><b>768</b><span>gym sessions</span></div>
+      <div class="kpi"><b>11,391</b><span>sets logged</span></div>
+      <div class="kpi"><b>3,757 t</b><span>total weight moved</span></div>
+      <div class="kpi"><b>94%</b><span>of weeks with a session</span></div>
+    </div>
+    <div class="eras">
+      <div class="era" style="--c:var(--bb)"><h3>Bodybuilding</h3><p>Apr 2021 – Feb 2023 · 315 sessions</p></div>
+      <div class="era" style="--c:var(--pl)"><h3>Powerlifting</h3><p>Mar 2023 – Jul 2025 · 296 sessions</p></div>
+      <div class="era" style="--c:var(--pd)"><h3>Padel</h3><p>Aug 2025 – now · 157 sessions</p></div>
+    </div>
+    <p class="note">The eras come from the data itself. Powerlifting starts when low-bar squats appear in March 2023. Padel starts in August 2025, when Pallof presses, rotational presses and kettlebell-style swings show up. Bodyweight is a flat 65 kg throughout, and lbs entries are converted to kg.</p>
+  </section>
+</div>
+
+<div class="wrap"><section class="grid" id="grid"></section></div>
+
+<div class="wrap">
+  <section class="closing">
+    <div>
+      <h2>What the log taught me</h2>
+      <p>I didn't lose strength by accident. I traded it on purpose. At peak I could deadlift over three times my bodyweight. Now I keep about 80% of that and spend the difference on lateral lunges, jumps and anti-rotation work that actually shows up on court.</p>
+      <p>The most consistent stretch was the bodybuilding era, with over three sessions a week. Since then it's been closer to two and a half, but there's more variety in what I do now than at any point in the five years.</p>
+    </div>
+    <div class="method">
+      <b style="color:var(--text)">Method</b>
+      <ul>
+        <li><b>Session</b> = a distinct date with at least one logged set.</li>
+        <li><b>Estimated 1RM</b> = heaviest set of 1–10 reps per quarter, using Epley (kg × (1 + reps/30)). Singles count as-is.</li>
+        <li><b>Set mix</b>: competition lifts and their variants count as powerlifting. Jumps, swings, Copenhagens, Pallofs, rotational and mobility work count as athletic. Everything else counts as hypertrophy and accessories.</li>
+        <li>Source: my own Turso database, exported 31 Oct 2026.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+const D = {"mix":{"q":["2021Q2","2021Q3","2021Q4","2022Q1","2022Q2","2022Q3","2022Q4","2023Q1","2023Q2","2023Q3","2023Q4","2024Q1","2024Q2","2024Q3","2024Q4","2025Q1","2025Q2","2025Q3","2025Q4","2026Q1","2026Q2","2026Q3","2026Q4"],"bb":[0.726,0.665,0.695,0.669,0.641,0.734,0.735,0.594,0.434,0.452,0.457,0.376,0.378,0.366,0.342,0.312,0.295,0.236,0.234,0.333,0.418,0.411,0.528],"pl":[0.274,0.335,0.305,0.331,0.359,0.266,0.265,0.406,0.566,0.548,0.543,0.624,0.582,0.634,0.635,0.63,0.648,0.294,0.175,0.105,0.061,0.055,0.031],"ath":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.04,0.0,0.023,0.058,0.057,0.47,0.591,0.562,0.521,0.534,0.441]},"reps":{"q":["2021Q2","2021Q3","2021Q4","2022Q1","2022Q2","2022Q3","2022Q4","2023Q1","2023Q2","2023Q3","2023Q4","2024Q1","2024Q2","2024Q3","2024Q4","2025Q1","2025Q2","2025Q3","2025Q4","2026Q1","2026Q2","2026Q3","2026Q4"],"v":[12.1,11.9,10.7,10.7,9.6,10.4,10.6,9.2,6.8,7.0,8.0,7.0,7.5,7.1,7.0,8.1,8.0,9.3,9.8,9.1,8.4,8.6,10.6]},"e1rm":{"q":["2021Q2","2021Q3","2021Q4","2022Q1","2022Q2","2022Q3","2022Q4","2023Q1","2023Q2","2023Q3","2023Q4","2024Q1","2024Q2","2024Q3","2024Q4","2025Q1","2025Q2","2025Q3","2025Q4","2026Q1","2026Q2","2026Q3","2026Q4"],"Squat":[116.7,123.8,128.0,141.7,149.3,154.0,154.0,153.0,154.0,157.5,165.0,167.5,143.0,148.5,145.8,145.8,145.8,143.0,141.0,144.0,null,null,null],"Bench":[90.7,102.1,107.9,102.0,104.0,110.0,107.3,112.8,113.8,113.8,114.0,105.0,98.7,102.0,99.0,99.0,99.0,96.2,96.0,96.0,null,null,95.0],"Deadlift":[128.3,162.2,162.7,161.5,173.3,null,176.0,176.0,200.0,198.0,178.8,202.5,172.1,180.0,173.2,170.5,180.0,167.8,162.0,168.0,155.8,155.8,null]},"monthly":{"m":["2021-04","2021-05","2021-06","2021-07","2021-08","2021-09","2021-10","2021-11","2021-12","2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-09","2022-10","2022-11","2022-12","2023-01","2023-02","2023-03","2023-04","2023-05","2023-06","2023-07","2023-08","2023-09","2023-10","2023-11","2023-12","2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10"],"v":[7,18,17,18,18,17,18,14,14,5,11,15,10,13,15,13,13,18,14,12,10,14,11,11,15,12,16,16,11,11,6,10,15,13,12,10,4,11,10,10,9,1,8,8,7,12,8,13,9,11,8,9,11,10,10,14,9,12,12,14,9,12,8,7,12,8,9]},"weekly":{"start":["2021-04-19","2021-04-26","2021-05-03","2021-05-10","2021-05-17","2021-05-24","2021-05-31","2021-06-07","2021-06-14","2021-06-21","2021-06-28","2021-07-05","2021-07-12","2021-07-19","2021-07-26","2021-08-02","2021-08-09","2021-08-16","2021-08-23","2021-08-30","2021-09-06","2021-09-13","2021-09-20","2021-09-27","2021-10-04","2021-10-11","2021-10-18","2021-10-25","2021-11-01","2021-11-08","2021-11-15","2021-11-22","2021-11-29","2021-12-06","2021-12-13","2021-12-20","2021-12-27","2022-01-03","2022-01-10","2022-01-17","2022-01-24","2022-01-31","2022-02-07","2022-02-14","2022-02-21","2022-02-28","2022-03-07","2022-03-14","2022-03-21","2022-03-28","2022-04-04","2022-04-11","2022-04-18","2022-04-25","2022-05-02","2022-05-09","2022-05-16","2022-05-23","2022-05-30","2022-06-06","2022-06-13","2022-06-20","2022-06-27","2022-07-04","2022-07-11","2022-07-18","2022-07-25","2022-08-01","2022-08-08","2022-08-15","2022-08-22","2022-08-29","2022-09-05","2022-09-12","2022-09-19","2022-09-26","2022-10-03","2022-10-10","2022-10-17","2022-10-24","2022-10-31","2022-11-07","2022-11-14","2022-11-21","2022-11-28","2022-12-05","2022-12-12","2022-12-19","2022-12-26","2023-01-02","2023-01-09","2023-01-16","2023-01-23","2023-01-30","2023-02-06","2023-02-13","2023-02-20","2023-02-27","2023-03-06","2023-03-13","2023-03-20","2023-03-27","2023-04-03","2023-04-10","2023-04-17","2023-04-24","2023-05-01","2023-05-08","2023-05-15","2023-05-22","2023-05-29","2023-06-05","2023-06-12","2023-06-19","2023-06-26","2023-07-03","2023-07-10","2023-07-17","2023-07-24","2023-07-31","2023-08-07","2023-08-14","2023-08-21","2023-08-28","2023-09-04","2023-09-11","2023-09-18","2023-09-25","2023-10-02","2023-10-09","2023-10-16","2023-10-23","2023-10-30","2023-11-06","2023-11-13","2023-11-20","2023-11-27","2023-12-04","2023-12-11","2023-12-18","2023-12-25","2024-01-01","2024-01-08","2024-01-15","2024-01-22","2024-01-29","2024-02-05","2024-02-12","2024-02-19","2024-02-26","2024-03-04","2024-03-11","2024-03-18","2024-03-25","2024-04-01","2024-04-08","2024-04-15","2024-04-22","2024-04-29","2024-05-06","2024-05-13","2024-05-20","2024-05-27","2024-06-03","2024-06-10","2024-06-17","2024-06-24","2024-07-01","2024-07-08","2024-07-15","2024-07-22","2024-07-29","2024-08-05","2024-08-12","2024-08-19","2024-08-26","2024-09-02","2024-09-09","2024-09-16","2024-09-23","2024-09-30","2024-10-07","2024-10-14","2024-10-21","2024-10-28","2024-11-04","2024-11-11","2024-11-18","2024-11-25","2024-12-02","2024-12-09","2024-12-16","2024-12-23","2024-12-30","2025-01-06","2025-01-13","2025-01-20","2025-01-27","2025-02-03","2025-02-10","2025-02-17","2025-02-24","2025-03-03","2025-03-10","2025-03-17","2025-03-24","2025-03-31","2025-04-07","2025-04-14","2025-04-21","2025-04-28","2025-05-05","2025-05-12","2025-05-19","2025-05-26","2025-06-02","2025-06-09","2025-06-16","2025-06-23","2025-06-30","2025-07-07","2025-07-14","2025-07-21","2025-07-28","2025-08-04","2025-08-11","2025-08-18","2025-08-25","2025-09-01","2025-09-08","2025-09-15","2025-09-22","2025-09-29","2025-10-06","2025-10-13","2025-10-20","2025-10-27","2025-11-03","2025-11-10","2025-11-17","2025-11-24","2025-12-01","2025-12-08","2025-12-15","2025-12-22","2025-12-29","2026-01-05","2026-01-12","2026-01-19","2026-01-26","2026-02-02","2026-02-09","2026-02-16","2026-02-23","2026-03-02","2026-03-09","2026-03-16","2026-03-23","2026-03-30","2026-04-06","2026-04-13","2026-04-20","2026-04-27","2026-05-04","2026-05-11","2026-05-18","2026-05-25","2026-06-01","2026-06-08","2026-06-15","2026-06-22","2026-06-29","2026-07-06","2026-07-13","2026-07-20","2026-07-27","2026-08-03","2026-08-10","2026-08-17","2026-08-24","2026-08-31","2026-09-07","2026-09-14","2026-09-21","2026-09-28","2026-10-05","2026-10-12","2026-10-19","2026-10-26"],"v":[4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,4,4,4,4,4,4,4,4,4,4,4,4,4,3,2,4,4,4,3,2,3,1,0,2,1,3,4,1,3,3,3,4,3,3,3,3,0,3,4,2,4,3,3,3,3,3,4,3,2,3,4,2,3,3,4,4,4,4,4,4,1,4,4,4,3,4,1,3,3,2,2,2,3,3,3,3,3,3,3,3,3,0,3,3,3,3,4,2,4,4,3,3,4,1,3,5,3,3,4,4,4,4,3,2,2,3,2,3,3,2,2,4,1,1,0,3,2,4,0,2,4,3,2,4,4,3,3,3,2,4,3,4,3,0,3,4,2,1,1,1,2,0,1,3,2,3,2,2,3,2,3,1,2,3,2,3,2,3,2,1,0,0,1,0,1,0,2,3,3,1,2,2,2,1,2,3,1,2,1,3,4,3,3,1,1,3,3,2,4,3,1,2,3,3,0,3,3,3,2,3,3,0,2,1,2,2,3,2,2,2,3,3,3,2,1,3,3,0,2,4,2,4,3,4,3,3,2,0,3,3,3,3,2,3,3,3,2,4,3,2,3,4,3,3,2,2,1,2,3,3,3,3,2,0,2,2,2,2,2,0,3,3,3,3,2,2,1,2,2,1,3,2,2]},"weekday":[99,123,109,112,122,58,145],"variety":{"q":["2021Q2","2021Q3","2021Q4","2022Q1","2022Q2","2022Q3","2022Q4","2023Q1","2023Q2","2023Q3","2023Q4","2024Q1","2024Q2","2024Q3","2024Q4","2025Q1","2025Q2","2025Q3","2025Q4","2026Q1","2026Q2","2026Q3","2026Q4"],"v":[24,26,31,27,18,25,26,27,21,20,22,20,15,10,12,10,10,25,19,23,16,35,31]},"top":[{"exercise_name":"Deadlift","n":947,"kind":"Powerlifting"},{"exercise_name":"Barbell Bench Press","n":945,"kind":"Powerlifting"},{"exercise_name":"Pullups","n":608,"kind":"Bodybuilding"},{"exercise_name":"Barbell Squat (Low Bar)","n":604,"kind":"Powerlifting"},{"exercise_name":"Bulgarian Split Squat","n":399,"kind":"Bodybuilding"},{"exercise_name":"Barbell Squat","n":348,"kind":"Powerlifting"},{"exercise_name":"2CT Bench Press","n":336,"kind":"Powerlifting"},{"exercise_name":"Romanian Deadlift","n":330,"kind":"Bodybuilding"},{"exercise_name":"Barbell Overhead Press","n":326,"kind":"Bodybuilding"},{"exercise_name":"Dead Bug","n":323,"kind":"Bodybuilding"}],"meet":[{"lift":"Barbell Squat (Low Bar)","kg":157.5,"made":true},{"lift":"Barbell Squat (Low Bar)","kg":165.0,"made":true},{"lift":"Barbell Squat (Low Bar)","kg":167.5,"made":true},{"lift":"Barbell Bench Press","kg":100.0,"made":true},{"lift":"Barbell Bench Press","kg":105.0,"made":true},{"lift":"Barbell Bench Press","kg":110.0,"made":false},{"lift":"Deadlift","kg":180.0,"made":false},{"lift":"Deadlift","kg":180.0,"made":true},{"lift":"Deadlift","kg":187.5,"made":true}],"core":{"Bodybuilding":0.2,"Padel":0.264,"Powerlifting":0.059},"legs":{"Bodybuilding":0.21,"Padel":0.334,"Powerlifting":0.286}};
+const BW = 65;
+const C = {bb:'#c0643f', pl:'#2a679c', pd:'#6f9a3a', text:'#171a1f', muted:'#66707a', grid:'#ebe4dc', surface:'#fff', alt:'#efe8df', accent:'#4e6877'};
+const KIND = {Bodybuilding:{c:C.bb,n:'Hypertrophy & accessories'}, Powerlifting:{c:C.pl,n:'Powerlifting'}, Athletic:{c:C.pd,n:'Athletic / padel'}};
+const NS='http://www.w3.org/2000/svg';
+const tip=document.getElementById('tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;moveTip(e)}
+function moveTip(e){const x=Math.min(e.clientX+14,innerWidth-250);tip.style.left=x+'px';tip.style.top=(e.clientY+14)+'px'}
+function hideTip(){tip.style.opacity=0}
+function el(tag,attrs={},parent){const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);if(parent)parent.appendChild(n);return n}
+function txt(parent,x,y,s,attrs={}){const t=el('text',{x,y,...attrs},parent);t.textContent=s;return t}
+function svg(w,h){return el('svg',{viewBox:`0 0 ${w} ${h}`,role:'img'})}
+function hover(node,html){node.style.cursor='default';node.addEventListener('pointerenter',e=>showTip(e,html));node.addEventListener('pointermove',moveTip);node.addEventListener('pointerleave',hideTip)}
+const qLabel=q=>q.replace('Q',' Q');
+const eraOfQ=q=>{const y=+q.slice(0,4),n=+q.slice(5);const v=y*10+n;return v<20231?'bb':v<20253?'pl':'pd'};
+const fmt=n=>n.toLocaleString('en-US');
+let DATA_SLOT=null;
+function table(rows,head){if(DATA_SLOT)DATA_SLOT.innerHTML=`<details class="tbl"><summary>view data</summary><table><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table></details>`;return ''}
+
+const ERA = {bb:{c:C.bb,n:'Bodybuilding era'}, pl:{c:C.pl,n:'Powerlifting era'}, pd:{c:C.pd,n:'Padel era'}, all:{c:C.accent,n:'All eras'}};
+const cards=[];
+function card(o){cards.push(o)}
+
+/* ---------- 1. Set mix ---------- */
+card({era:'all', title:'Powerlifting went from <em style="--hl:var(--pl)">65%</em> of my sets to <em style="--hl:var(--pd)">3%</em>.',
+ sub:'Each quarter\'s sets by training style. The blue wave is the powerlifting years. Green takes over from August 2025, when padel became the goal.',
+ draw(v){
+  const W=480,H=280,L=34,R=8,T=10,B=30, q=D.mix.q, n=q.length, iw=W-L-R, ih=H-T-B;
+  const s=svg(W,H); const x=i=>L+iw*i/(n-1), y=f=>T+ih*(1-f);
+  [0,.25,.5,.75,1].forEach(f=>{el('line',{x1:L,x2:W-R,y1:y(f),y2:y(f),stroke:C.grid},s);txt(s,L-6,y(f)+4,Math.round(f*100)+'%',{'text-anchor':'end'})});
+  const layers=[['pl',D.mix.pl,'Powerlifting'],['bb',D.mix.bb,'Bodybuilding'],['ath',D.mix.ath,'Athletic']];
+  let base=new Array(n).fill(0);
+  layers.forEach(([k,arr,name])=>{
+    const top=arr.map((v,i)=>base[i]+v);
+    let d='M'+top.map((v,i)=>`${x(i)},${y(v)}`).join('L')+'L'+[...base].reverse().map((v,j)=>`${x(n-1-j)},${y(v)}`).join('L')+'Z';
+    el('path',{d,fill:KIND[name].c,stroke:'#fff','stroke-width':2,'stroke-linejoin':'round'},s);
+    base=top;
+  });
+  ['2021','2022','2023','2024','2025','2026'].forEach(yr=>{const i=q.indexOf(yr+'Q1');const ii=i<0?0:i;txt(s,x(ii),H-10,yr,{'text-anchor':i<0?'start':'middle'})});
+  // direct labels
+  txt(s,x(3),y(.62),'Hypertrophy',{class:'lbl',fill:'#fff',style:'fill:#fff'});
+  txt(s,x(13),y(.3),'Powerlifting',{class:'lbl',style:'fill:#fff','text-anchor':'middle'});
+  txt(s,x(20),y(.8),'Athletic',{class:'lbl',style:'fill:#fff','text-anchor':'middle'});
+  // hover columns
+  q.forEach((qq,i)=>{const r=el('rect',{x:x(i)-iw/(n-1)/2,y:T,width:iw/(n-1),height:ih,fill:'transparent'},s);
+    hover(r,`<b>${qLabel(qq)}</b><br><span class="k">Powerlifting</span> ${Math.round(D.mix.pl[i]*100)}%<br><span class="k">Hypertrophy</span> ${Math.round(D.mix.bb[i]*100)}%<br><span class="k">Athletic</span> ${Math.round(D.mix.ath[i]*100)}%`)});
+  v.appendChild(s);
+  v.insertAdjacentHTML('beforeend',`<div class="legend"><span style="--c:${C.pl}"><i></i>Powerlifting</span><span style="--c:${C.bb}"><i></i>Hypertrophy & accessories</span><span style="--c:${C.pd}"><i></i>Athletic / padel</span></div>`+table(q.map((qq,i)=>[qLabel(qq),Math.round(D.mix.pl[i]*100)+'%',Math.round(D.mix.bb[i]*100)+'%',Math.round(D.mix.ath[i]*100)+'%']),['Quarter','PL','Hyp.','Ath.']));
+ }});
+
+/* ---------- 2. Reps per set ---------- */
+card({era:'all', title:'From <em style="--hl:var(--bb)">12 reps</em> a set, down to <em style="--hl:var(--pl)">7</em>, and back up.',
+ sub:'Average reps per set each quarter. Bodybuilding lived in the 10–12 range, powerlifting dropped to heavy 6–7s, and padel conditioning is pushing it back up.',
+ draw(v){
+  const W=480,H=270,L=28,R=10,T=16,B=30,q=D.reps.q,n=q.length,iw=W-L-R,ih=H-T-B,lo=5,hi=13;
+  const s=svg(W,H),x=i=>L+iw*i/(n-1),y=r=>T+ih*(1-(r-lo)/(hi-lo));
+  // era bands
+  const bands=[['bb',0,7.5],['pl',7.5,16.5],['pd',16.5,n-1]];
+  bands.forEach(([k,a,b])=>{el('rect',{x:x(Math.max(a,0)),y:T,width:x(b)-x(Math.max(a,0)),height:ih,fill:ERA[k].c,opacity:.07},s)});
+  [6,8,10,12].forEach(r=>{el('line',{x1:L,x2:W-R,y1:y(r),y2:y(r),stroke:C.grid},s);txt(s,L-6,y(r)+4,r,{'text-anchor':'end'})});
+  for(let i=0;i<n-1;i++){el('line',{x1:x(i),y1:y(D.reps.v[i]),x2:x(i+1),y2:y(D.reps.v[i+1]),stroke:ERA[eraOfQ(q[i+1])].c,'stroke-width':2.5,'stroke-linecap':'round'},s)}
+  D.reps.v.forEach((r,i)=>{const c=el('circle',{cx:x(i),cy:y(r),r:4,fill:ERA[eraOfQ(q[i])].c,stroke:'#fff','stroke-width':2},s);
+    const h=el('rect',{x:x(i)-iw/(n-1)/2,y:T,width:iw/(n-1),height:ih,fill:'transparent'},s);hover(h,`<b>${qLabel(q[i])}</b><br>${r} reps per set on average`)});
+  const ann=[[0,'12.1'],[9,'6.8'],[n-1,'10.6']];
+  ann.forEach(([i,t])=>txt(s,x(i),y(D.reps.v[i])+(i==9?18:-10),t,{class:'lbl','text-anchor':i==0?'start':i==n-1?'end':'middle'}));
+  ['2021','2022','2023','2024','2025','2026'].forEach(yr=>{const i=q.indexOf(yr+'Q1');txt(s,x(i<0?0:i),H-10,yr,{'text-anchor':i<0?'start':'middle'})});
+  v.appendChild(s);
+  v.insertAdjacentHTML('beforeend',`<div class="legend"><span style="--c:${C.bb}"><i></i>Bodybuilding 10.8 avg</span><span style="--c:${C.pl}"><i></i>Powerlifting 7.0</span><span style="--c:${C.pd}"><i></i>Padel 8.9</span></div>`+table(q.map((qq,i)=>[qLabel(qq),D.reps.v[i]]),['Quarter','Avg reps']));
+ }});
+
+/* ---------- 3. Bodyweight multiples ---------- */
+card({era:'pl', title:'At 65 kg, I deadlifted <em style="--hl:var(--pl)">3.1×</em> my bodyweight.',
+ sub:'Heaviest successful single on each lift, divided by my 65 kg bodyweight. Peak squat, bench and deadlift together come to 480 kg, or 7.4 times bodyweight.',
+ draw(v){
+  const lifts=[['Deadlift',202.5,'8 Feb 2024'],['Squat',167.5,'22 Feb 2024 · meet'],['Bench press',110,'27 Sep 2022'],['Overhead press',62.5,'2022 H2']];
+  const W=480,H=270,L=112,R=56,T=20,rowH=56,iw=W-L-R,max=3.5;
+  const s=svg(W,H),x=m=>L+iw*m/max;
+  [1,2,3].forEach(m=>{el('line',{x1:x(m),x2:x(m),y1:T-6,y2:T+rowH*4-14,stroke:C.grid,'stroke-dasharray':'3 4'},s);txt(s,x(m),T-10,m+'× BW',{'text-anchor':'middle',class:'mono'})});
+  lifts.forEach(([n,kg,d],i)=>{const m=kg/BW,yy=T+i*rowH+6;
+    txt(s,L-12,yy+17,n,{'text-anchor':'end',class:'lbl'});
+    const b=el('rect',{x:L,y:yy,width:x(m)-L,height:24,rx:4,fill:i==0?C.pl:'#8fb0cc'},s);
+    txt(s,x(m)+8,yy+17,m.toFixed(2)+'×',{class:'lbl'});
+    txt(s,L,yy+40,`${kg} kg · ${d}`,{class:'mono','font-size':10});
+    hover(b,`<b>${n}</b><br>${kg} kg = ${m.toFixed(2)}× bodyweight<br><span class="k">${d}</span>`)});
+  v.appendChild(s);
+  v.insertAdjacentHTML('beforeend',table(lifts.map(l=>[l[0],l[1]+' kg',(l[1]/BW).toFixed(2)+'×',l[2]]),['Lift','Best','× BW','When']));
+ }});
+
+/* ---------- 4. Meet day ---------- */
+card({era:'pl', title:'Meet day: <em style="--hl:var(--pl)">7 of 9</em> attempts, a 460 kg total.',
+ sub:'22 Feb 2024, my only meet in the log. The squat went 3 for 3 and hit a lifetime best. I missed 110 on bench and opened deadlift with a miss.',
+ draw(v){
+  const W=480,H=280,s=svg(W,H);const lifts=['Squat','Bench','Deadlift'];const cw=128,ch=58,gx=12,L=86,T=30;
+  [1,2,3].forEach(a=>txt(s,L+(a-1)*(cw+gx)+cw/2,T-12,'Attempt '+a,{'text-anchor':'middle',class:'mono'}));
+  lifts.forEach((lf,r)=>{txt(s,L-12,T+r*(ch+gx)+ch/2+5,lf,{'text-anchor':'end',class:'lbl'});
+    for(let a=0;a<3;a++){const m=D.meet[r*3+a],xx=L+a*(cw+gx),yy=T+r*(ch+gx);
+      const g=el('g',{},s);
+      el('rect',{x:xx,y:yy,width:cw,height:ch,rx:10,fill:m.made?C.pl:'#fff',stroke:m.made?C.pl:'#b9c0c7','stroke-width':m.made?0:1.5,'stroke-dasharray':m.made?'':'5 4'},g);
+      txt(g,xx+cw/2,yy+ch/2+2,m.kg+' kg',{'text-anchor':'middle',style:`fill:${m.made?'#fff':C.muted};font-weight:700;font-size:17px;font-family:'Inter Tight'`});
+      txt(g,xx+cw/2,yy+ch/2+18,m.made?'✓ good lift':'✕ no lift',{'text-anchor':'middle',style:`fill:${m.made?'#dbe7f1':C.muted};font-size:10.5px`});
+      hover(g,`<b>${lf}, attempt ${a+1}</b><br>${m.kg} kg · ${m.made?'good lift':'missed'}<br><span class="k">${(m.kg/BW).toFixed(2)}× bodyweight</span>`)}});
+  const yT=T+3*(ch+gx)+16;
+  txt(s,L,yT+14,'TOTAL',{class:'mono'});
+  txt(s,L+52,yT+16,'167.5 + 105 + 187.5 = 460 kg',{class:'lbl',style:'font-size:15px;fill:#171a1f;font-weight:700'});
+  txt(s,L,yT+36,'7.08× bodyweight at 65 kg',{class:'mono'});
+  v.appendChild(s);
+ }});
+
+/* ---------- 5. e1RM over time ---------- */
+card({era:'pd', title:'I kept about <em style="--hl:var(--pd)">80%</em> of my peak strength after switching to padel.',
+ sub:'Best estimated one-rep max each quarter. Everything peaked going into the February 2024 meet. Since then the barbell has been for maintenance, not PRs.',
+ draw(v){
+  const W=480,H=280,L=36,R=58,T=14,B=30,q=D.e1rm.q,n=q.length,iw=W-L-R,ih=H-T-B,lo=80,hi=210;
+  const s=svg(W,H),x=i=>L+iw*i/(n-1),y=k=>T+ih*(1-(k-lo)/(hi-lo));
+  [100,140,180].forEach(k=>{el('line',{x1:L,x2:W-R,y1:y(k),y2:y(k),stroke:C.grid},s);txt(s,L-6,y(k)+4,k,{'text-anchor':'end'})});
+  txt(s,L-6,T-2,'kg',{'text-anchor':'end'});
+  const mi=q.indexOf('2024Q1');el('line',{x1:x(mi),x2:x(mi),y1:T,y2:T+ih,stroke:C.muted,'stroke-dasharray':'3 4'},s);
+  txt(s,x(mi)+4,T+ih-6,'meet',{class:'mono'});
+  const series=[['Deadlift','#2a679c'],['Squat','#c0643f'],['Bench','#6f9a3a']];
+  series.forEach(([k,c])=>{const pts=D.e1rm[k].map((v,i)=>v==null?null:[x(i),y(v)]);
+    let d='',pen=false;pts.forEach(p=>{if(!p){pen=false;return}d+=(pen?'L':'M')+p[0]+','+p[1];pen=true});
+    el('path',{d,fill:'none',stroke:c,'stroke-width':2.5,'stroke-linejoin':'round','stroke-linecap':'round'},s);
+    let li=pts.length-1;while(!pts[li])li--;
+    el('circle',{cx:pts[li][0],cy:pts[li][1],r:4.5,fill:c,stroke:'#fff','stroke-width':2},s);
+    txt(s,W-R+8,pts[li][1]+4,k,{class:'lbl'});
+  });
+  q.forEach((qq,i)=>{const h=el('rect',{x:x(i)-iw/(n-1)/2,y:T,width:iw/(n-1),height:ih,fill:'transparent'},s);
+    hover(h,`<b>${qLabel(qq)}</b>`+series.map(([k])=>`<br><span class="k">${k}</span> ${D.e1rm[k][i]??'—'} kg`).join(''))});
+  ['2021','2022','2023','2024','2025','2026'].forEach(yr=>{const i=q.indexOf(yr+'Q1');txt(s,x(i<0?0:i),H-10,yr,{'text-anchor':i<0?'start':'middle'})});
+  v.appendChild(s);
+  v.insertAdjacentHTML('beforeend',`<div class="legend"><span style="--c:#2a679c"><i></i>Deadlift 202.5 → 156 (−23%)</span><span style="--c:#c0643f"><i></i>Squat 167.5 → 144 (−14%)</span><span style="--c:#6f9a3a"><i></i>Bench 114 → 95 (−17%)</span></div>`+table(q.map((qq,i)=>[qLabel(qq),D.e1rm.Squat[i]??'—',D.e1rm.Bench[i]??'—',D.e1rm.Deadlift[i]??'—']),['Quarter','Squat','Bench','Deadlift']));
+ }});
+
+/* ---------- 6. Most logged ---------- */
+card({era:'all', title:'Deadlift <em style="--hl:var(--pl)">947</em>, bench <em style="--hl:var(--pl)">945</em>. A five-year tie.',
+ sub:'My ten most-logged exercises. Two sets separate the top two across 768 sessions. Pull-ups are the most-logged movement that isn\'t a competition lift.',
+ draw(v){
+  const W=480,H=300,L=168,R=40,T=4,rh=29,iw=W-L-R,max=950;
+  const s=svg(W,H),x=n=>iw*n/max;
+  D.top.forEach((t,i)=>{const yy=T+i*rh;
+    txt(s,L-10,yy+15,t.exercise_name.replace('Barbell ',''),{'text-anchor':'end',class:i<2?'lbl':''});
+    const b=el('rect',{x:L,y:yy+3,width:x(t.n),height:17,rx:4,fill:KIND[t.kind].c,opacity:i<2?1:.75},s);
+    txt(s,L+x(t.n)+6,yy+16,fmt(t.n),{class:'mono'});
+    hover(b,`<b>${t.exercise_name}</b><br>${fmt(t.n)} sets<br><span class="k">${KIND[t.kind].n}</span>`)});
+  v.appendChild(s);
+  v.insertAdjacentHTML('beforeend',`<div class="legend"><span style="--c:${C.pl}"><i></i>Powerlifting</span><span style="--c:${C.bb}"><i></i>Hypertrophy & accessories</span></div>`);
+ }});
+
+/* ---------- 7. Monthly sessions ---------- */
+card({era:'bb', title:'The bodybuilding era was my most disciplined: <em style="--hl:var(--bb)">3.3</em> sessions a week.',
+ sub:'Gym sessions per month. Powerlifting meant fewer, heavier days at about 2.4 a week, and padel takes up some of the week too.',
+ draw(v){
+  const W=480,H=260,L=24,R=4,T=10,B=30,m=D.monthly.m,n=m.length,iw=W-L-R,ih=H-T-B,max=20;
+  const s=svg(W,H),bw=iw/n,y=c=>T+ih*(1-c/max);
+  [5,10,15,20].forEach(c=>{el('line',{x1:L,x2:W-R,y1:y(c),y2:y(c),stroke:C.grid},s);txt(s,L-5,y(c)+4,c,{'text-anchor':'end'})});
+  m.forEach((mm,i)=>{const c=D.monthly.v[i];const era=mm<'2023-03'?'bb':mm<'2025-08'?'pl':'pd';
+    const b=el('rect',{x:L+i*bw+1,y:y(c),width:Math.max(bw-2,1),height:Math.max(T+ih-y(c),0),rx:1.5,fill:ERA[era].c},s);
+    const h=el('rect',{x:L+i*bw,y:T,width:bw,height:ih,fill:'transparent'},s);
+    const dt=new Date(mm+'-01T00:00');hover(h,`<b>${dt.toLocaleString('en-US',{month:'short',year:'numeric'})}</b><br>${c} sessions`)});
+  ['2022','2023','2024','2025','2026'].forEach(yr=>{const i=m.indexOf(yr+'-01');txt(s,L+i*bw,H-10,yr,{'text-anchor':'middle'})});
+  v.appendChild(s);
+  v.insertAdjacentHTML('beforeend',`<div class="legend"><span style="--c:${C.bb}"><i></i>Bodybuilding 3.3/wk</span><span style="--c:${C.pl}"><i></i>Powerlifting 2.4/wk</span><span style="--c:${C.pd}"><i></i>Padel 2.4/wk</span></div>`+table(m.map((mm,i)=>[mm,D.monthly.v[i]]),['Month','Sessions']));
+ }});
+
+/* ---------- 8. Weekly heatmap ---------- */
+card({era:'all', title:'<em>272 of 289</em> weeks had at least one session.',
+ sub:'Every week since April 2021. My longest streak was 44 weeks without a zero, from May 2022 to Feb 2023. The longest break was 20 days.',
+ draw(v){
+  const W=480,H=250,L=36,T=8,cs=7.4,gap=0.95,s=svg(W,H);
+  const ramp=['#efe8df','#c9d6df','#8fa8b8','#4e6877','#2c3e4a'];
+  const yrs=[2021,2022,2023,2024,2025,2026];
+  yrs.forEach((yr,r)=>txt(s,L-8,T+r*36+18,yr,{'text-anchor':'end',class:'mono'}));
+  D.weekly.start.forEach((st,i)=>{const d=new Date(st+'T00:00');const yr=d.getFullYear();const jan1=new Date(yr,0,1);const wk=Math.floor((d-jan1)/864e5/7);
+    const r=yrs.indexOf(yr);const c=D.weekly.v[i];
+    const rect=el('rect',{x:L+wk*(cs+gap),y:T+r*36,width:cs,height:28,rx:2,fill:ramp[Math.min(c,4)]},s);
+    hover(rect,`<b>Week of ${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</b><br>${c} session${c==1?'':'s'}`)});
+  // legend
+  const ly=T+6*36+4;txt(s,L,ly+10,'sessions / week',{class:'mono'});
+  ['0','1','2','3','4+'].forEach((t,i)=>{el('rect',{x:L+112+i*34,y:ly,width:14,height:14,rx:2,fill:ramp[i]},s);txt(s,L+130+i*34,ly+11,t)});
+  v.appendChild(s);
+ }});
+
+/* ---------- 9. Weekday ---------- */
+card({era:'all', title:'<em>Sunday</em> is my gym day. Saturday almost never is.',
+ sub:'Sessions by day of the week across all 768. Sunday has 145, nearly 2.5 times Saturday\'s 58. Tuesday (123) and Friday (122) are close behind.',
+ draw(v){
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];const vals=D.weekday;
+  const W=480,H=260,L=10,R=10,T=26,B=26,iw=W-L-R,ih=H-T-B,bw=iw/7,max=150,s=svg(W,H);
+  vals.forEach((c,i)=>{const h=ih*c/max,xx=L+i*bw+10;const hi=i==6;
+    const b=el('rect',{x:xx,y:T+ih-h,width:bw-20,height:h,rx:5,fill:hi?C.accent:i==5?'#e3d7ca':'#b9c7d0'},s);
+    txt(s,xx+(bw-20)/2,T+ih-h-8,c,{'text-anchor':'middle',class:hi||i==5?'lbl':'mono'});
+    txt(s,xx+(bw-20)/2,H-6,days[i],{'text-anchor':'middle',class:hi?'lbl':''});
+    hover(b,`<b>${days[i]}</b><br>${c} sessions · ${Math.round(c/768*100)}% of all`)});
+  v.appendChild(s);
+ }});
+
+/* ---------- 10. Variety ---------- */
+card({era:'pd', title:'Padel tripled my exercise menu, from <em style="--hl:var(--pl)">10</em> to <em style="--hl:var(--pd)">35</em>.',
+ sub:'Distinct exercises logged each quarter. The powerlifting peak was a tight rotation of about 10. Padel brought jumps, lateral work and mobility. Core and abs went from 6% of sets to 26%.',
+ draw(v){
+  const W=480,H=260,L=26,R=8,T=14,B=30,q=D.variety.q,n=q.length,iw=W-L-R,ih=H-T-B,max=40;
+  const s=svg(W,H),bw=iw/n,y=c=>T+ih*(1-c/max);
+  [10,20,30,40].forEach(c=>{el('line',{x1:L,x2:W-R,y1:y(c),y2:y(c),stroke:C.grid},s);txt(s,L-5,y(c)+4,c,{'text-anchor':'end'})});
+  q.forEach((qq,i)=>{const c=D.variety.v[i];const b=el('rect',{x:L+i*bw+2,y:y(c),width:bw-4,height:T+ih-y(c),rx:4,fill:ERA[eraOfQ(qq)].c},s);
+    if(c==10&&qq=='2024Q3'||qq=='2026Q3')txt(s,L+i*bw+bw/2,y(c)-6,c,{'text-anchor':'middle',class:'lbl'});
+    hover(b,`<b>${qLabel(qq)}</b><br>${c} different exercises`)});
+  ['2021','2022','2023','2024','2025','2026'].forEach(yr=>{const i=q.indexOf(yr+'Q1');txt(s,L+(i<0?0:i)*bw+(i<0?0:bw/2),H-10,yr,{'text-anchor':i<0?'start':'middle'})});
+  v.appendChild(s);
+  v.insertAdjacentHTML('beforeend',`<div class="legend"><span style="--c:${C.bb}"><i></i>Bodybuilding</span><span style="--c:${C.pl}"><i></i>Powerlifting</span><span style="--c:${C.pd}"><i></i>Padel</span></div>`+table(q.map((qq,i)=>[qLabel(qq),D.variety.v[i]]),['Quarter','Exercises']));
+ }});
+
+/* ---------- render ---------- */
+const grid=document.getElementById('grid');
+cards.forEach((c,i)=>{
+  const w=document.createElement('div');w.className='cardwrap';
+  const e=ERA[c.era];
+  w.innerHTML=`<article class="card" id="insight-${i+1}">
+    <div class="meta"><span>INSIGHT ${String(i+1).padStart(2,'0')}/10</span><span class="chip" style="--c:${e.c}"><i></i>${e.n}</span></div>
+    <h2>${c.title}</h2><p class="sub">${c.sub}</p>
+    <div class="viz"></div>
+    <footer><span>nigelrimando.com</span><span>11,391 sets · 2021–2026</span></footer>
+  </article>
+  <div class="dl"><div class="dslot" style="flex:1"></div></div>`;
+  grid.appendChild(w);
+  DATA_SLOT=w.querySelector('.dslot');
+  c.draw(w.querySelector('.viz'));
+});
+
+</script>
+</body>
+</html>
