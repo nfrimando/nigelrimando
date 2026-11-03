@@ -200,6 +200,22 @@ A dump of standalone HTML reports. To publish: drop the file in `public/reports/
 4. Keep it self-contained (inline CSS/JS or CDN links), and include the viewport meta so it works on phones.
 5. Run `npm run build` before pushing. It's public and indexed, so check names and personal details first.
 
+## Journal (`/admin/journal`)
+
+Private nightly "interview" journal. Raw material for future LLM narration/analysis — no AI in the app.
+
+- **Tables:** `journal_questions` (question bank, managed in Admin → Setup → Journal Questions) and
+  `journal_answers` (one row per `date` + `question_id`, upserted). Each answer stores `prompt_snapshot`,
+  so rewording a question never changes what past answers were responding to.
+- **Flags:** `is_required` = the minimum "too tired" entry (asked first); `is_default_on` = pre-selected
+  on the nightly start screen (optional ones can be toggled off per night, not persisted); `is_active`
+  = retired when off. Answered questions can't be deleted, only deactivated.
+- **Status:** a day is *complete* when every active required question is answered, else *partial*.
+  Derived on read — there's no per-day table.
+- **Separate from `thoughts`:** thoughts are in-the-moment captures; the journal page shows the day's
+  thoughts/interactions/workouts as context. `GET /api/admin/journal/export?from&to` returns Markdown
+  merging journal answers + thoughts + interactions by date, for pasting into an LLM.
+
 ## TODO: Deferred homepage sections
 
 ### What I've built (Featured builds)
@@ -236,7 +252,7 @@ public/
   assets/                    ← images, icons
 lib/
   db.ts                      ← Turso + Drizzle client (queries only, no migrations)
-  schema.ts                  ← 11 tables (exercises, sets, padel, habits, thoughts, etc.)
+  schema.ts                  ← 13 tables (exercises, sets, padel, habits, thoughts, journal, etc.)
                                mirrors the live DB by hand — see "Database Changes"
   session.ts                 ← iron-session config
   content-stream.ts          ← Medium + thoughts aggregator
@@ -260,4 +276,4 @@ SESSION_SECRET=
 - [x] Phase 1: Homepage (who I am)
 - [x] Phase 2: Exercise log (sets, padel, ebike)
 - [x] Phase 3: Journal + habits (iron-session protected)
-- [x] Phase 4: Daily log tracker (Turso DB, 11 tables)
+- [x] Phase 4: Daily log tracker (Turso DB, 13 tables)

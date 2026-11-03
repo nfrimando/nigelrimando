@@ -259,6 +259,60 @@ export type NewHabit = typeof habits.$inferInsert;
 export type HabitEntry = typeof habitEntries.$inferSelect;
 export type NewHabitEntry = typeof habitEntries.$inferInsert;
 
+export const journalQuestions = sqliteTable("journal_questions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  key: text("key").notNull().unique(),
+  prompt: text("prompt").notNull(),
+  helpText: text("help_text"),
+  category: text("category"), // 'day' | 'work' | 'relationships' | 'self' | etc.
+  // DB enforces: CHECK (answer_type IN ('text','scale'))
+  answerType: text("answer_type", { enum: ["text", "scale"] })
+    .notNull()
+    .default("text"),
+  isRequired: integer("is_required", { mode: "boolean" }).notNull().default(false),
+  isDefaultOn: integer("is_default_on", { mode: "boolean" }).notNull().default(true),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const journalAnswers = sqliteTable(
+  "journal_answers",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    date: text("date").notNull(), // 'YYYY-MM-DD'
+    questionId: integer("question_id")
+      .notNull()
+      .references(() => journalQuestions.id),
+    promptSnapshot: text("prompt_snapshot").notNull(), // question text at time of answering
+    textValue: text("text_value"),
+    numericValue: real("numeric_value"), // 1–5 for 'scale'
+    createdAt: integer("created_at")
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at")
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    index("idx_journal_answers_date").on(t.date),
+    uniqueIndex("idx_journal_answers_date_question").on(t.date, t.questionId),
+  ],
+);
+
+export const JOURNAL_ANSWER_TYPES = ["text", "scale"] as const;
+export type JournalAnswerType = (typeof JOURNAL_ANSWER_TYPES)[number];
+
+export type JournalQuestion = typeof journalQuestions.$inferSelect;
+export type NewJournalQuestion = typeof journalQuestions.$inferInsert;
+export type JournalAnswer = typeof journalAnswers.$inferSelect;
+export type NewJournalAnswer = typeof journalAnswers.$inferInsert;
+
 export const visitorMessages = sqliteTable("visitor_messages", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   message: text("message").notNull(),

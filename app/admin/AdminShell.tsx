@@ -13,9 +13,10 @@ import ExpensesSection from "./ExpensesSection";
 import HabitsSection from "./HabitsSection";
 import HabitEntriesSection from "./HabitEntriesSection";
 import VisitorMessagesSection from "./VisitorMessagesSection";
+import JournalQuestionsSection from "./JournalQuestionsSection";
 
 const DAILY_TABS = ["Sets", "Padel Sets", "Thoughts", "Interactions", "Transports", "Expenses", "Habit Entries", "Messages"] as const;
-const SETUP_TABS = ["Exercises", "Persons", "Habits"] as const;
+const SETUP_TABS = ["Exercises", "Persons", "Habits", "Journal Questions"] as const;
 const ALL_TABS = [...DAILY_TABS, ...SETUP_TABS] as const;
 
 type Tab = (typeof ALL_TABS)[number];
@@ -58,6 +59,12 @@ export default function AdminShell() {
               className="text-xs px-3 py-1 rounded-[14px] border border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
             >
               Analysis
+            </Link>
+            <Link
+              href="/admin/journal"
+              className="text-xs px-3 py-1 rounded-[14px] border border-[var(--border)] bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors"
+            >
+              Journal
             </Link>
           </div>
           <button
@@ -115,6 +122,7 @@ export default function AdminShell() {
         {activeTab === "Habits" && <HabitsSection />}
         {activeTab === "Habit Entries" && <HabitEntriesSection />}
         {activeTab === "Messages" && <VisitorMessagesSection />}
+        {activeTab === "Journal Questions" && <JournalQuestionsSection />}
       </div>
     </div>
   );
